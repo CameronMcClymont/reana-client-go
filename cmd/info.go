@@ -202,6 +202,16 @@ func (o *infoOptions) run(cmd *cobra.Command) error {
 		if p.SupportedWorkflowEngines != nil {
 			displayInfoSliceItem(cmd, p.SupportedWorkflowEngines.Title, p.SupportedWorkflowEngines.Value)
 		}
+		if p.VettedContainerImagesAllowlist != nil {
+			displayInfoSliceItem(cmd, p.VettedContainerImagesAllowlist.Title, p.VettedContainerImagesAllowlist.Value)
+		}
+		if p.VettedContainerImagesEnabled != nil {
+			value := "False"
+			if p.VettedContainerImagesEnabled.Value {
+				value = "True"
+			}
+			cmd.Printf("%s: %s\n", p.VettedContainerImagesEnabled.Title, value)
+		}
 		if p.WorkspacesAvailable != nil {
 			displayInfoSliceItem(cmd, p.WorkspacesAvailable.Title, p.WorkspacesAvailable.Value)
 		}

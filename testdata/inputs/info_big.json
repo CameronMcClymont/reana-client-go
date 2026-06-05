@@ -106,5 +106,16 @@
   "dask_enabled": {
     "title": "Dask workflows allowed in the cluster",
     "value": "False"
+  },
+  "vetted_container_images_allowlist": {
+    "title": "List of vetted container images allowed in user workflows",
+    "value": [
+      "docker.io/library/python:2.7-slim",
+      "docker.io/reanahub/reana-env-root6:6.18.04"
+    ]
+  },
+  "vetted_container_images_enabled": {
+    "title": "Vetted container images required for user workflows",
+    "value": true
   }
 }

@@ -320,6 +320,12 @@ type InfoOKBody struct {
 	// supported workflow engines
 	SupportedWorkflowEngines *InfoOKBodySupportedWorkflowEngines `json:"supported_workflow_engines,omitempty"`
 
+	// vetted container images allowlist
+	VettedContainerImagesAllowlist *InfoOKBodyVettedContainerImagesAllowlist `json:"vetted_container_images_allowlist,omitempty"`
+
+	// vetted container images enabled
+	VettedContainerImagesEnabled *InfoOKBodyVettedContainerImagesEnabled `json:"vetted_container_images_enabled,omitempty"`
+
 	// workspaces available
 	WorkspacesAvailable *InfoOKBodyWorkspacesAvailable `json:"workspaces_available,omitempty"`
 
@@ -458,6 +464,14 @@ func (o *InfoOKBody) Validate(formats strfmt.Registry) error {
 	}
 
 	if err := o.validateSupportedWorkflowEngines(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if err := o.validateVettedContainerImagesAllowlist(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if err := o.validateVettedContainerImagesEnabled(formats); err != nil {
 		res = append(res, err)
 	}
 
@@ -1196,6 +1210,52 @@ func (o *InfoOKBody) validateSupportedWorkflowEngines(formats strfmt.Registry) e
 	return nil
 }
 
+func (o *InfoOKBody) validateVettedContainerImagesAllowlist(formats strfmt.Registry) error {
+	if swag.IsZero(o.VettedContainerImagesAllowlist) { // not required
+		return nil
+	}
+
+	if o.VettedContainerImagesAllowlist != nil {
+		if err := o.VettedContainerImagesAllowlist.Validate(formats); err != nil {
+			ve := new(errors.Validation)
+			if stderrors.As(err, &ve) {
+				return ve.ValidateName("infoOK" + "." + "vetted_container_images_allowlist")
+			}
+			ce := new(errors.CompositeError)
+			if stderrors.As(err, &ce) {
+				return ce.ValidateName("infoOK" + "." + "vetted_container_images_allowlist")
+			}
+
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (o *InfoOKBody) validateVettedContainerImagesEnabled(formats strfmt.Registry) error {
+	if swag.IsZero(o.VettedContainerImagesEnabled) { // not required
+		return nil
+	}
+
+	if o.VettedContainerImagesEnabled != nil {
+		if err := o.VettedContainerImagesEnabled.Validate(formats); err != nil {
+			ve := new(errors.Validation)
+			if stderrors.As(err, &ve) {
+				return ve.ValidateName("infoOK" + "." + "vetted_container_images_enabled")
+			}
+			ce := new(errors.CompositeError)
+			if stderrors.As(err, &ce) {
+				return ce.ValidateName("infoOK" + "." + "vetted_container_images_enabled")
+			}
+
+			return err
+		}
+	}
+
+	return nil
+}
+
 func (o *InfoOKBody) validateWorkspacesAvailable(formats strfmt.Registry) error {
 	if swag.IsZero(o.WorkspacesAvailable) { // not required
 		return nil
@@ -1413,6 +1473,14 @@ func (o *InfoOKBody) ContextValidate(ctx context.Context, formats strfmt.Registr
 	}
 
 	if err := o.contextValidateSupportedWorkflowEngines(ctx, formats); err != nil {
+		res = append(res, err)
+	}
+
+	if err := o.contextValidateVettedContainerImagesAllowlist(ctx, formats); err != nil {
+		res = append(res, err)
+	}
+
+	if err := o.contextValidateVettedContainerImagesEnabled(ctx, formats); err != nil {
 		res = append(res, err)
 	}
 
@@ -2204,6 +2272,56 @@ func (o *InfoOKBody) contextValidateSupportedWorkflowEngines(ctx context.Context
 			ce := new(errors.CompositeError)
 			if stderrors.As(err, &ce) {
 				return ce.ValidateName("infoOK" + "." + "supported_workflow_engines")
+			}
+
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (o *InfoOKBody) contextValidateVettedContainerImagesAllowlist(ctx context.Context, formats strfmt.Registry) error {
+
+	if o.VettedContainerImagesAllowlist != nil {
+
+		if swag.IsZero(o.VettedContainerImagesAllowlist) { // not required
+			return nil
+		}
+
+		if err := o.VettedContainerImagesAllowlist.ContextValidate(ctx, formats); err != nil {
+			ve := new(errors.Validation)
+			if stderrors.As(err, &ve) {
+				return ve.ValidateName("infoOK" + "." + "vetted_container_images_allowlist")
+			}
+			ce := new(errors.CompositeError)
+			if stderrors.As(err, &ce) {
+				return ce.ValidateName("infoOK" + "." + "vetted_container_images_allowlist")
+			}
+
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (o *InfoOKBody) contextValidateVettedContainerImagesEnabled(ctx context.Context, formats strfmt.Registry) error {
+
+	if o.VettedContainerImagesEnabled != nil {
+
+		if swag.IsZero(o.VettedContainerImagesEnabled) { // not required
+			return nil
+		}
+
+		if err := o.VettedContainerImagesEnabled.ContextValidate(ctx, formats); err != nil {
+			ve := new(errors.Validation)
+			if stderrors.As(err, &ve) {
+				return ve.ValidateName("infoOK" + "." + "vetted_container_images_enabled")
+			}
+			ce := new(errors.CompositeError)
+			if stderrors.As(err, &ce) {
+				return ce.ValidateName("infoOK" + "." + "vetted_container_images_enabled")
 			}
 
 			return err
@@ -3595,6 +3713,88 @@ func (o *InfoOKBodySupportedWorkflowEngines) MarshalBinary() ([]byte, error) {
 // UnmarshalBinary interface implementation
 func (o *InfoOKBodySupportedWorkflowEngines) UnmarshalBinary(b []byte) error {
 	var res InfoOKBodySupportedWorkflowEngines
+	if err := swag.ReadJSON(b, &res); err != nil {
+		return err
+	}
+	*o = res
+	return nil
+}
+
+/*
+InfoOKBodyVettedContainerImagesAllowlist info o k body vetted container images allowlist
+swagger:model InfoOKBodyVettedContainerImagesAllowlist
+*/
+type InfoOKBodyVettedContainerImagesAllowlist struct {
+
+	// title
+	Title string `json:"title,omitempty"`
+
+	// value
+	Value []string `json:"value"`
+}
+
+// Validate validates this info o k body vetted container images allowlist
+func (o *InfoOKBodyVettedContainerImagesAllowlist) Validate(formats strfmt.Registry) error {
+	return nil
+}
+
+// ContextValidate validates this info o k body vetted container images allowlist based on context it is used
+func (o *InfoOKBodyVettedContainerImagesAllowlist) ContextValidate(ctx context.Context, formats strfmt.Registry) error {
+	return nil
+}
+
+// MarshalBinary interface implementation
+func (o *InfoOKBodyVettedContainerImagesAllowlist) MarshalBinary() ([]byte, error) {
+	if o == nil {
+		return nil, nil
+	}
+	return swag.WriteJSON(o)
+}
+
+// UnmarshalBinary interface implementation
+func (o *InfoOKBodyVettedContainerImagesAllowlist) UnmarshalBinary(b []byte) error {
+	var res InfoOKBodyVettedContainerImagesAllowlist
+	if err := swag.ReadJSON(b, &res); err != nil {
+		return err
+	}
+	*o = res
+	return nil
+}
+
+/*
+InfoOKBodyVettedContainerImagesEnabled info o k body vetted container images enabled
+swagger:model InfoOKBodyVettedContainerImagesEnabled
+*/
+type InfoOKBodyVettedContainerImagesEnabled struct {
+
+	// title
+	Title string `json:"title,omitempty"`
+
+	// value
+	Value bool `json:"value"`
+}
+
+// Validate validates this info o k body vetted container images enabled
+func (o *InfoOKBodyVettedContainerImagesEnabled) Validate(formats strfmt.Registry) error {
+	return nil
+}
+
+// ContextValidate validates this info o k body vetted container images enabled based on context it is used
+func (o *InfoOKBodyVettedContainerImagesEnabled) ContextValidate(ctx context.Context, formats strfmt.Registry) error {
+	return nil
+}
+
+// MarshalBinary interface implementation
+func (o *InfoOKBodyVettedContainerImagesEnabled) MarshalBinary() ([]byte, error) {
+	if o == nil {
+		return nil, nil
+	}
+	return swag.WriteJSON(o)
+}
+
+// UnmarshalBinary interface implementation
+func (o *InfoOKBodyVettedContainerImagesEnabled) UnmarshalBinary(b []byte) error {
+	var res InfoOKBodyVettedContainerImagesEnabled
 	if err := swag.ReadJSON(b, &res); err != nil {
 		return err
 	}
