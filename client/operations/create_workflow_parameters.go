@@ -67,17 +67,11 @@ type CreateWorkflowParams struct {
 	*/
 	AccessToken *string
 
-	/* ReanaSpecification.
+	/* Bundle.
 
-	   REANA specification with necessary data to instantiate a workflow.
+	   Uncompressed ZIP validation snapshot containing canonical reana.yaml plus explicitly declared workflow sources.
 	*/
-	ReanaSpecification any
-
-	/* Spec.
-
-	   Remote repository which contains a valid REANA specification.
-	*/
-	Spec *string
+	Bundle runtime.NamedReadCloser
 
 	/* WorkflowName.
 
@@ -149,26 +143,15 @@ func (o *CreateWorkflowParams) SetAccessToken(accessToken *string) {
 	o.AccessToken = accessToken
 }
 
-// WithReanaSpecification adds the reanaSpecification to the create workflow params
-func (o *CreateWorkflowParams) WithReanaSpecification(reanaSpecification any) *CreateWorkflowParams {
-	o.SetReanaSpecification(reanaSpecification)
+// WithBundle adds the bundle to the create workflow params
+func (o *CreateWorkflowParams) WithBundle(bundle runtime.NamedReadCloser) *CreateWorkflowParams {
+	o.SetBundle(bundle)
 	return o
 }
 
-// SetReanaSpecification adds the reanaSpecification to the create workflow params
-func (o *CreateWorkflowParams) SetReanaSpecification(reanaSpecification any) {
-	o.ReanaSpecification = reanaSpecification
-}
-
-// WithSpec adds the spec to the create workflow params
-func (o *CreateWorkflowParams) WithSpec(spec *string) *CreateWorkflowParams {
-	o.SetSpec(spec)
-	return o
-}
-
-// SetSpec adds the spec to the create workflow params
-func (o *CreateWorkflowParams) SetSpec(spec *string) {
-	o.Spec = spec
+// SetBundle adds the bundle to the create workflow params
+func (o *CreateWorkflowParams) SetBundle(bundle runtime.NamedReadCloser) {
+	o.Bundle = bundle
 }
 
 // WithWorkflowName adds the workflowName to the create workflow params
@@ -206,27 +189,9 @@ func (o *CreateWorkflowParams) WriteToRequest(r runtime.ClientRequest, reg strfm
 			}
 		}
 	}
-	if o.ReanaSpecification != nil {
-		if err := r.SetBodyParam(o.ReanaSpecification); err != nil {
-			return err
-		}
-	}
-
-	if o.Spec != nil {
-
-		// query param spec
-		var qrSpec string
-
-		if o.Spec != nil {
-			qrSpec = *o.Spec
-		}
-		qSpec := qrSpec
-		if qSpec != "" {
-
-			if err := r.SetQueryParam("spec", qSpec); err != nil {
-				return err
-			}
-		}
+	// form file param bundle
+	if err := r.SetFileParam("bundle", o.Bundle); err != nil {
+		return err
 	}
 
 	// query param workflow_name

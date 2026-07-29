@@ -11,10 +11,15 @@ import (
 	stderrors "errors"
 	"fmt"
 	"io"
+	"strconv"
 
+	"github.com/go-openapi/errors"
 	"github.com/go-openapi/runtime"
 	"github.com/go-openapi/strfmt"
 	"github.com/go-openapi/swag"
+	"github.com/go-openapi/validate"
+
+	"reanahub/reana-client-go/models"
 )
 
 // CreateWorkflowReader is a Reader for the CreateWorkflow structure.
@@ -49,6 +54,24 @@ func (o *CreateWorkflowReader) ReadResponse(response runtime.ClientResponse, con
 			return nil, err
 		}
 		return nil, result
+	case 409:
+		result := NewCreateWorkflowConflict()
+		if err := result.readResponse(response, consumer, o.formats); err != nil {
+			return nil, err
+		}
+		return nil, result
+	case 413:
+		result := NewCreateWorkflowRequestEntityTooLarge()
+		if err := result.readResponse(response, consumer, o.formats); err != nil {
+			return nil, err
+		}
+		return nil, result
+	case 429:
+		result := NewCreateWorkflowTooManyRequests()
+		if err := result.readResponse(response, consumer, o.formats); err != nil {
+			return nil, err
+		}
+		return nil, result
 	case 500:
 		result := NewCreateWorkflowInternalServerError()
 		if err := result.readResponse(response, consumer, o.formats); err != nil {
@@ -57,6 +80,12 @@ func (o *CreateWorkflowReader) ReadResponse(response runtime.ClientResponse, con
 		return nil, result
 	case 501:
 		result := NewCreateWorkflowNotImplemented()
+		if err := result.readResponse(response, consumer, o.formats); err != nil {
+			return nil, err
+		}
+		return nil, result
+	case 503:
+		result := NewCreateWorkflowServiceUnavailable()
 		if err := result.readResponse(response, consumer, o.formats); err != nil {
 			return nil, err
 		}
@@ -346,6 +375,216 @@ func (o *CreateWorkflowNotFound) readResponse(response runtime.ClientResponse, c
 	return nil
 }
 
+// NewCreateWorkflowConflict creates a CreateWorkflowConflict with default headers values
+func NewCreateWorkflowConflict() *CreateWorkflowConflict {
+	return &CreateWorkflowConflict{}
+}
+
+/*
+CreateWorkflowConflict describes a response with status code 409, with default header values.
+
+Another workflow-family mutation is in progress.
+*/
+type CreateWorkflowConflict struct {
+	Payload *models.ErrorResponse
+}
+
+// IsSuccess returns true when this create workflow conflict response has a 2xx status code
+func (o *CreateWorkflowConflict) IsSuccess() bool {
+	return false
+}
+
+// IsRedirect returns true when this create workflow conflict response has a 3xx status code
+func (o *CreateWorkflowConflict) IsRedirect() bool {
+	return false
+}
+
+// IsClientError returns true when this create workflow conflict response has a 4xx status code
+func (o *CreateWorkflowConflict) IsClientError() bool {
+	return true
+}
+
+// IsServerError returns true when this create workflow conflict response has a 5xx status code
+func (o *CreateWorkflowConflict) IsServerError() bool {
+	return false
+}
+
+// IsCode returns true when this create workflow conflict response a status code equal to that given
+func (o *CreateWorkflowConflict) IsCode(code int) bool {
+	return code == 409
+}
+
+// Code gets the status code for the create workflow conflict response
+func (o *CreateWorkflowConflict) Code() int {
+	return 409
+}
+
+func (o *CreateWorkflowConflict) Error() string {
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[POST /api/workflows][%d] createWorkflowConflict %s", 409, payload)
+}
+
+func (o *CreateWorkflowConflict) String() string {
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[POST /api/workflows][%d] createWorkflowConflict %s", 409, payload)
+}
+
+func (o *CreateWorkflowConflict) GetPayload() *models.ErrorResponse {
+	return o.Payload
+}
+
+func (o *CreateWorkflowConflict) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
+
+	o.Payload = new(models.ErrorResponse)
+
+	// response payload
+	if err := consumer.Consume(response.Body(), o.Payload); err != nil && !stderrors.Is(err, io.EOF) {
+		return err
+	}
+
+	return nil
+}
+
+// NewCreateWorkflowRequestEntityTooLarge creates a CreateWorkflowRequestEntityTooLarge with default headers values
+func NewCreateWorkflowRequestEntityTooLarge() *CreateWorkflowRequestEntityTooLarge {
+	return &CreateWorkflowRequestEntityTooLarge{}
+}
+
+/*
+CreateWorkflowRequestEntityTooLarge describes a response with status code 413, with default header values.
+
+The uploaded request exceeds the bounded bundle limit.
+*/
+type CreateWorkflowRequestEntityTooLarge struct {
+	Payload *CreateWorkflowRequestEntityTooLargeBody
+}
+
+// IsSuccess returns true when this create workflow request entity too large response has a 2xx status code
+func (o *CreateWorkflowRequestEntityTooLarge) IsSuccess() bool {
+	return false
+}
+
+// IsRedirect returns true when this create workflow request entity too large response has a 3xx status code
+func (o *CreateWorkflowRequestEntityTooLarge) IsRedirect() bool {
+	return false
+}
+
+// IsClientError returns true when this create workflow request entity too large response has a 4xx status code
+func (o *CreateWorkflowRequestEntityTooLarge) IsClientError() bool {
+	return true
+}
+
+// IsServerError returns true when this create workflow request entity too large response has a 5xx status code
+func (o *CreateWorkflowRequestEntityTooLarge) IsServerError() bool {
+	return false
+}
+
+// IsCode returns true when this create workflow request entity too large response a status code equal to that given
+func (o *CreateWorkflowRequestEntityTooLarge) IsCode(code int) bool {
+	return code == 413
+}
+
+// Code gets the status code for the create workflow request entity too large response
+func (o *CreateWorkflowRequestEntityTooLarge) Code() int {
+	return 413
+}
+
+func (o *CreateWorkflowRequestEntityTooLarge) Error() string {
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[POST /api/workflows][%d] createWorkflowRequestEntityTooLarge %s", 413, payload)
+}
+
+func (o *CreateWorkflowRequestEntityTooLarge) String() string {
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[POST /api/workflows][%d] createWorkflowRequestEntityTooLarge %s", 413, payload)
+}
+
+func (o *CreateWorkflowRequestEntityTooLarge) GetPayload() *CreateWorkflowRequestEntityTooLargeBody {
+	return o.Payload
+}
+
+func (o *CreateWorkflowRequestEntityTooLarge) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
+
+	o.Payload = new(CreateWorkflowRequestEntityTooLargeBody)
+
+	// response payload
+	if err := consumer.Consume(response.Body(), o.Payload); err != nil && !stderrors.Is(err, io.EOF) {
+		return err
+	}
+
+	return nil
+}
+
+// NewCreateWorkflowTooManyRequests creates a CreateWorkflowTooManyRequests with default headers values
+func NewCreateWorkflowTooManyRequests() *CreateWorkflowTooManyRequests {
+	return &CreateWorkflowTooManyRequests{}
+}
+
+/*
+CreateWorkflowTooManyRequests describes a response with status code 429, with default header values.
+
+Request rate limit exceeded.
+*/
+type CreateWorkflowTooManyRequests struct {
+	Payload *CreateWorkflowTooManyRequestsBody
+}
+
+// IsSuccess returns true when this create workflow too many requests response has a 2xx status code
+func (o *CreateWorkflowTooManyRequests) IsSuccess() bool {
+	return false
+}
+
+// IsRedirect returns true when this create workflow too many requests response has a 3xx status code
+func (o *CreateWorkflowTooManyRequests) IsRedirect() bool {
+	return false
+}
+
+// IsClientError returns true when this create workflow too many requests response has a 4xx status code
+func (o *CreateWorkflowTooManyRequests) IsClientError() bool {
+	return true
+}
+
+// IsServerError returns true when this create workflow too many requests response has a 5xx status code
+func (o *CreateWorkflowTooManyRequests) IsServerError() bool {
+	return false
+}
+
+// IsCode returns true when this create workflow too many requests response a status code equal to that given
+func (o *CreateWorkflowTooManyRequests) IsCode(code int) bool {
+	return code == 429
+}
+
+// Code gets the status code for the create workflow too many requests response
+func (o *CreateWorkflowTooManyRequests) Code() int {
+	return 429
+}
+
+func (o *CreateWorkflowTooManyRequests) Error() string {
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[POST /api/workflows][%d] createWorkflowTooManyRequests %s", 429, payload)
+}
+
+func (o *CreateWorkflowTooManyRequests) String() string {
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[POST /api/workflows][%d] createWorkflowTooManyRequests %s", 429, payload)
+}
+
+func (o *CreateWorkflowTooManyRequests) GetPayload() *CreateWorkflowTooManyRequestsBody {
+	return o.Payload
+}
+
+func (o *CreateWorkflowTooManyRequests) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
+
+	o.Payload = new(CreateWorkflowTooManyRequestsBody)
+
+	// response payload
+	if err := consumer.Consume(response.Body(), o.Payload); err != nil && !stderrors.Is(err, io.EOF) {
+		return err
+	}
+
+	return nil
+}
+
 // NewCreateWorkflowInternalServerError creates a CreateWorkflowInternalServerError with default headers values
 func NewCreateWorkflowInternalServerError() *CreateWorkflowInternalServerError {
 	return &CreateWorkflowInternalServerError{}
@@ -472,6 +711,76 @@ func (o *CreateWorkflowNotImplemented) readResponse(response runtime.ClientRespo
 	return nil
 }
 
+// NewCreateWorkflowServiceUnavailable creates a CreateWorkflowServiceUnavailable with default headers values
+func NewCreateWorkflowServiceUnavailable() *CreateWorkflowServiceUnavailable {
+	return &CreateWorkflowServiceUnavailable{}
+}
+
+/*
+CreateWorkflowServiceUnavailable describes a response with status code 503, with default header values.
+
+Workspace mutation or controller service is unavailable.
+*/
+type CreateWorkflowServiceUnavailable struct {
+	Payload *models.ErrorResponse
+}
+
+// IsSuccess returns true when this create workflow service unavailable response has a 2xx status code
+func (o *CreateWorkflowServiceUnavailable) IsSuccess() bool {
+	return false
+}
+
+// IsRedirect returns true when this create workflow service unavailable response has a 3xx status code
+func (o *CreateWorkflowServiceUnavailable) IsRedirect() bool {
+	return false
+}
+
+// IsClientError returns true when this create workflow service unavailable response has a 4xx status code
+func (o *CreateWorkflowServiceUnavailable) IsClientError() bool {
+	return false
+}
+
+// IsServerError returns true when this create workflow service unavailable response has a 5xx status code
+func (o *CreateWorkflowServiceUnavailable) IsServerError() bool {
+	return true
+}
+
+// IsCode returns true when this create workflow service unavailable response a status code equal to that given
+func (o *CreateWorkflowServiceUnavailable) IsCode(code int) bool {
+	return code == 503
+}
+
+// Code gets the status code for the create workflow service unavailable response
+func (o *CreateWorkflowServiceUnavailable) Code() int {
+	return 503
+}
+
+func (o *CreateWorkflowServiceUnavailable) Error() string {
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[POST /api/workflows][%d] createWorkflowServiceUnavailable %s", 503, payload)
+}
+
+func (o *CreateWorkflowServiceUnavailable) String() string {
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[POST /api/workflows][%d] createWorkflowServiceUnavailable %s", 503, payload)
+}
+
+func (o *CreateWorkflowServiceUnavailable) GetPayload() *models.ErrorResponse {
+	return o.Payload
+}
+
+func (o *CreateWorkflowServiceUnavailable) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
+
+	o.Payload = new(models.ErrorResponse)
+
+	// response payload
+	if err := consumer.Consume(response.Body(), o.Payload); err != nil && !stderrors.Is(err, io.EOF) {
+		return err
+	}
+
+	return nil
+}
+
 /*
 CreateWorkflowBadRequestBody create workflow bad request body
 swagger:model CreateWorkflowBadRequestBody
@@ -519,6 +828,9 @@ type CreateWorkflowCreatedBody struct {
 	// message
 	Message string `json:"message,omitempty"`
 
+	// validation warnings
+	ValidationWarnings []*CreateWorkflowCreatedBodyValidationWarningsItems0 `json:"validation_warnings"`
+
 	// workflow id
 	WorkflowID string `json:"workflow_id,omitempty"`
 
@@ -528,11 +840,88 @@ type CreateWorkflowCreatedBody struct {
 
 // Validate validates this create workflow created body
 func (o *CreateWorkflowCreatedBody) Validate(formats strfmt.Registry) error {
+	var res []error
+
+	if err := o.validateValidationWarnings(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if len(res) > 0 {
+		return errors.CompositeValidationError(res...)
+	}
 	return nil
 }
 
-// ContextValidate validates this create workflow created body based on context it is used
+func (o *CreateWorkflowCreatedBody) validateValidationWarnings(formats strfmt.Registry) error {
+	if swag.IsZero(o.ValidationWarnings) { // not required
+		return nil
+	}
+
+	for i := 0; i < len(o.ValidationWarnings); i++ {
+		if swag.IsZero(o.ValidationWarnings[i]) { // not required
+			continue
+		}
+
+		if o.ValidationWarnings[i] != nil {
+			if err := o.ValidationWarnings[i].Validate(formats); err != nil {
+				ve := new(errors.Validation)
+				if stderrors.As(err, &ve) {
+					return ve.ValidateName("createWorkflowCreated" + "." + "validation_warnings" + "." + strconv.Itoa(i))
+				}
+				ce := new(errors.CompositeError)
+				if stderrors.As(err, &ce) {
+					return ce.ValidateName("createWorkflowCreated" + "." + "validation_warnings" + "." + strconv.Itoa(i))
+				}
+
+				return err
+			}
+		}
+
+	}
+
+	return nil
+}
+
+// ContextValidate validate this create workflow created body based on the context it is used
 func (o *CreateWorkflowCreatedBody) ContextValidate(ctx context.Context, formats strfmt.Registry) error {
+	var res []error
+
+	if err := o.contextValidateValidationWarnings(ctx, formats); err != nil {
+		res = append(res, err)
+	}
+
+	if len(res) > 0 {
+		return errors.CompositeValidationError(res...)
+	}
+	return nil
+}
+
+func (o *CreateWorkflowCreatedBody) contextValidateValidationWarnings(ctx context.Context, formats strfmt.Registry) error {
+
+	for i := 0; i < len(o.ValidationWarnings); i++ {
+
+		if o.ValidationWarnings[i] != nil {
+
+			if swag.IsZero(o.ValidationWarnings[i]) { // not required
+				return nil
+			}
+
+			if err := o.ValidationWarnings[i].ContextValidate(ctx, formats); err != nil {
+				ve := new(errors.Validation)
+				if stderrors.As(err, &ve) {
+					return ve.ValidateName("createWorkflowCreated" + "." + "validation_warnings" + "." + strconv.Itoa(i))
+				}
+				ce := new(errors.CompositeError)
+				if stderrors.As(err, &ce) {
+					return ce.ValidateName("createWorkflowCreated" + "." + "validation_warnings" + "." + strconv.Itoa(i))
+				}
+
+				return err
+			}
+		}
+
+	}
+
 	return nil
 }
 
@@ -547,6 +936,50 @@ func (o *CreateWorkflowCreatedBody) MarshalBinary() ([]byte, error) {
 // UnmarshalBinary interface implementation
 func (o *CreateWorkflowCreatedBody) UnmarshalBinary(b []byte) error {
 	var res CreateWorkflowCreatedBody
+	if err := swag.ReadJSON(b, &res); err != nil {
+		return err
+	}
+	*o = res
+	return nil
+}
+
+/*
+CreateWorkflowCreatedBodyValidationWarningsItems0 create workflow created body validation warnings items0
+swagger:model CreateWorkflowCreatedBodyValidationWarningsItems0
+*/
+type CreateWorkflowCreatedBodyValidationWarningsItems0 struct {
+
+	// code
+	Code string `json:"code,omitempty"`
+
+	// message
+	Message string `json:"message,omitempty"`
+
+	// path
+	Path string `json:"path,omitempty"`
+}
+
+// Validate validates this create workflow created body validation warnings items0
+func (o *CreateWorkflowCreatedBodyValidationWarningsItems0) Validate(formats strfmt.Registry) error {
+	return nil
+}
+
+// ContextValidate validates this create workflow created body validation warnings items0 based on context it is used
+func (o *CreateWorkflowCreatedBodyValidationWarningsItems0) ContextValidate(ctx context.Context, formats strfmt.Registry) error {
+	return nil
+}
+
+// MarshalBinary interface implementation
+func (o *CreateWorkflowCreatedBodyValidationWarningsItems0) MarshalBinary() ([]byte, error) {
+	if o == nil {
+		return nil, nil
+	}
+	return swag.WriteJSON(o)
+}
+
+// UnmarshalBinary interface implementation
+func (o *CreateWorkflowCreatedBodyValidationWarningsItems0) UnmarshalBinary(b []byte) error {
+	var res CreateWorkflowCreatedBodyValidationWarningsItems0
 	if err := swag.ReadJSON(b, &res); err != nil {
 		return err
 	}
@@ -661,6 +1094,120 @@ func (o *CreateWorkflowNotFoundBody) MarshalBinary() ([]byte, error) {
 // UnmarshalBinary interface implementation
 func (o *CreateWorkflowNotFoundBody) UnmarshalBinary(b []byte) error {
 	var res CreateWorkflowNotFoundBody
+	if err := swag.ReadJSON(b, &res); err != nil {
+		return err
+	}
+	*o = res
+	return nil
+}
+
+/*
+CreateWorkflowRequestEntityTooLargeBody create workflow request entity too large body
+swagger:model CreateWorkflowRequestEntityTooLargeBody
+*/
+type CreateWorkflowRequestEntityTooLargeBody struct {
+
+	// message
+	// Required: true
+	Message *string `json:"message"`
+}
+
+// Validate validates this create workflow request entity too large body
+func (o *CreateWorkflowRequestEntityTooLargeBody) Validate(formats strfmt.Registry) error {
+	var res []error
+
+	if err := o.validateMessage(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if len(res) > 0 {
+		return errors.CompositeValidationError(res...)
+	}
+	return nil
+}
+
+func (o *CreateWorkflowRequestEntityTooLargeBody) validateMessage(formats strfmt.Registry) error {
+
+	if err := validate.Required("createWorkflowRequestEntityTooLarge"+"."+"message", "body", o.Message); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// ContextValidate validates this create workflow request entity too large body based on context it is used
+func (o *CreateWorkflowRequestEntityTooLargeBody) ContextValidate(ctx context.Context, formats strfmt.Registry) error {
+	return nil
+}
+
+// MarshalBinary interface implementation
+func (o *CreateWorkflowRequestEntityTooLargeBody) MarshalBinary() ([]byte, error) {
+	if o == nil {
+		return nil, nil
+	}
+	return swag.WriteJSON(o)
+}
+
+// UnmarshalBinary interface implementation
+func (o *CreateWorkflowRequestEntityTooLargeBody) UnmarshalBinary(b []byte) error {
+	var res CreateWorkflowRequestEntityTooLargeBody
+	if err := swag.ReadJSON(b, &res); err != nil {
+		return err
+	}
+	*o = res
+	return nil
+}
+
+/*
+CreateWorkflowTooManyRequestsBody create workflow too many requests body
+swagger:model CreateWorkflowTooManyRequestsBody
+*/
+type CreateWorkflowTooManyRequestsBody struct {
+
+	// message
+	// Required: true
+	Message *string `json:"message"`
+}
+
+// Validate validates this create workflow too many requests body
+func (o *CreateWorkflowTooManyRequestsBody) Validate(formats strfmt.Registry) error {
+	var res []error
+
+	if err := o.validateMessage(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if len(res) > 0 {
+		return errors.CompositeValidationError(res...)
+	}
+	return nil
+}
+
+func (o *CreateWorkflowTooManyRequestsBody) validateMessage(formats strfmt.Registry) error {
+
+	if err := validate.Required("createWorkflowTooManyRequests"+"."+"message", "body", o.Message); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// ContextValidate validates this create workflow too many requests body based on context it is used
+func (o *CreateWorkflowTooManyRequestsBody) ContextValidate(ctx context.Context, formats strfmt.Registry) error {
+	return nil
+}
+
+// MarshalBinary interface implementation
+func (o *CreateWorkflowTooManyRequestsBody) MarshalBinary() ([]byte, error) {
+	if o == nil {
+		return nil, nil
+	}
+	return swag.WriteJSON(o)
+}
+
+// UnmarshalBinary interface implementation
+func (o *CreateWorkflowTooManyRequestsBody) UnmarshalBinary(b []byte) error {
+	var res CreateWorkflowTooManyRequestsBody
 	if err := swag.ReadJSON(b, &res); err != nil {
 		return err
 	}

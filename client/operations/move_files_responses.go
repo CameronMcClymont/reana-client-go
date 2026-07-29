@@ -15,6 +15,8 @@ import (
 	"github.com/go-openapi/runtime"
 	"github.com/go-openapi/strfmt"
 	"github.com/go-openapi/swag"
+
+	"reanahub/reana-client-go/models"
 )
 
 // MoveFilesReader is a Reader for the MoveFiles structure.
@@ -57,6 +59,12 @@ func (o *MoveFilesReader) ReadResponse(response runtime.ClientResponse, consumer
 		return nil, result
 	case 500:
 		result := NewMoveFilesInternalServerError()
+		if err := result.readResponse(response, consumer, o.formats); err != nil {
+			return nil, err
+		}
+		return nil, result
+	case 503:
+		result := NewMoveFilesServiceUnavailable()
 		if err := result.readResponse(response, consumer, o.formats); err != nil {
 			return nil, err
 		}
@@ -477,6 +485,76 @@ func (o *MoveFilesInternalServerError) GetPayload() *MoveFilesInternalServerErro
 func (o *MoveFilesInternalServerError) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
 	o.Payload = new(MoveFilesInternalServerErrorBody)
+
+	// response payload
+	if err := consumer.Consume(response.Body(), o.Payload); err != nil && !stderrors.Is(err, io.EOF) {
+		return err
+	}
+
+	return nil
+}
+
+// NewMoveFilesServiceUnavailable creates a MoveFilesServiceUnavailable with default headers values
+func NewMoveFilesServiceUnavailable() *MoveFilesServiceUnavailable {
+	return &MoveFilesServiceUnavailable{}
+}
+
+/*
+MoveFilesServiceUnavailable describes a response with status code 503, with default header values.
+
+Workspace mutation serialization is unavailable.
+*/
+type MoveFilesServiceUnavailable struct {
+	Payload *models.ErrorResponse
+}
+
+// IsSuccess returns true when this move files service unavailable response has a 2xx status code
+func (o *MoveFilesServiceUnavailable) IsSuccess() bool {
+	return false
+}
+
+// IsRedirect returns true when this move files service unavailable response has a 3xx status code
+func (o *MoveFilesServiceUnavailable) IsRedirect() bool {
+	return false
+}
+
+// IsClientError returns true when this move files service unavailable response has a 4xx status code
+func (o *MoveFilesServiceUnavailable) IsClientError() bool {
+	return false
+}
+
+// IsServerError returns true when this move files service unavailable response has a 5xx status code
+func (o *MoveFilesServiceUnavailable) IsServerError() bool {
+	return true
+}
+
+// IsCode returns true when this move files service unavailable response a status code equal to that given
+func (o *MoveFilesServiceUnavailable) IsCode(code int) bool {
+	return code == 503
+}
+
+// Code gets the status code for the move files service unavailable response
+func (o *MoveFilesServiceUnavailable) Code() int {
+	return 503
+}
+
+func (o *MoveFilesServiceUnavailable) Error() string {
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[PUT /api/workflows/move_files/{workflow_id_or_name}][%d] moveFilesServiceUnavailable %s", 503, payload)
+}
+
+func (o *MoveFilesServiceUnavailable) String() string {
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[PUT /api/workflows/move_files/{workflow_id_or_name}][%d] moveFilesServiceUnavailable %s", 503, payload)
+}
+
+func (o *MoveFilesServiceUnavailable) GetPayload() *models.ErrorResponse {
+	return o.Payload
+}
+
+func (o *MoveFilesServiceUnavailable) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
+
+	o.Payload = new(models.ErrorResponse)
 
 	// response payload
 	if err := consumer.Consume(response.Body(), o.Payload); err != nil && !stderrors.Is(err, io.EOF) {

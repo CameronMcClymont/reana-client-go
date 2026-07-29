@@ -140,7 +140,7 @@ func NewGetFilesBadRequest() *GetFilesBadRequest {
 /*
 GetFilesBadRequest describes a response with status code 400, with default header values.
 
-Request failed. The incoming payload seems malformed.
+Request failed. The request parameters are invalid or the filtered result set exceeds the configured display limit.
 */
 type GetFilesBadRequest struct {
 	Payload *GetFilesBadRequestBody

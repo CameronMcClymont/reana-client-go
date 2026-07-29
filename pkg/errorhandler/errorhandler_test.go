@@ -23,6 +23,12 @@ type testApiError struct {
 
 func (e *testApiError) Error() string { return e.Payload.Message }
 
+type testPointerApiError struct {
+	Payload *struct{ Message *string }
+}
+
+func (e *testPointerApiError) Error() string { return *e.Payload.Message }
+
 func TestHandleApiError(t *testing.T) {
 	serverURL := "https://localhost:8080"
 	viper.Set("server-url", serverURL)
@@ -33,6 +39,10 @@ func TestHandleApiError(t *testing.T) {
 	urlError := url.Error{}
 	apiError := testApiError{
 		Payload: struct{ Message string }{Message: "API Error"},
+	}
+	pointerMessage := "Pointer API Error"
+	pointerApiError := testPointerApiError{
+		Payload: &struct{ Message *string }{Message: &pointerMessage},
 	}
 	otherError := errors.New("other Error")
 
@@ -50,6 +60,14 @@ func TestHandleApiError(t *testing.T) {
 		"api error": {
 			arg:  &apiError,
 			want: apiError.Error(),
+		},
+		"wrapped api error": {
+			arg:  fmt.Errorf("cannot complete request: %w", &apiError),
+			want: apiError.Error(),
+		},
+		"generated pointer api error": {
+			arg:  &pointerApiError,
+			want: pointerApiError.Error(),
 		},
 		"other error": {
 			arg:  otherError,

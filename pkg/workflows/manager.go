@@ -10,8 +10,12 @@ package workflows
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
+	"io"
 	"mime"
+	"net/http"
+	"net/url"
 	"os"
 	"reanahub/reana-client-go/client"
 	"reanahub/reana-client-go/client/operations"
@@ -91,31 +95,88 @@ func GetWorkflowSpecification(
 
 // UploadFile uploads a file to the specified workflow.
 func UploadFile(token, workflow, fileName string) (string, error) {
-	if err := validator.ValidateFile(fileName); err != nil {
+	return UploadFileAs(token, workflow, fileName, fileName)
+}
+
+// UploadFileAs uploads a local file under an explicit workspace path.
+func UploadFileAs(
+	token, workflow, localFileName, workspaceFileName string,
+) (string, error) {
+	// Preserve local validation before constructing a client so missing files
+	// fail independently of REANA_SERVER_URL configuration.
+	if err := validator.ValidateFile(localFileName); err != nil {
 		return "", err
 	}
-	fileData, err := os.ReadFile(fileName)
+	httpClient, serverURL, err := client.StreamingHTTPClient()
+	if err != nil {
+		return "", err
+	}
+	return uploadFileAs(httpClient, serverURL, token, workflow, localFileName,
+		workspaceFileName)
+}
+
+func uploadFileAs(
+	httpClient *http.Client,
+	serverURL *url.URL,
+	token, workflow, localFileName, workspaceFileName string,
+) (string, error) {
+	if err := validator.ValidateFile(localFileName); err != nil {
+		return "", err
+	}
+	file, err := os.Open(localFileName)
 	if err != nil {
 		return "", fmt.Errorf(
 			"file %s could not be uploaded: %s",
-			fileName, err.Error(),
+			localFileName, err.Error(),
 		)
 	}
-	uploadParams := operations.NewUploadFileParams()
-	uploadParams.SetAccessToken(&token)
-	uploadParams.SetWorkflowIDOrName(workflow)
-	uploadParams.SetFileName(fileName)
-	uploadParams.SetFile(string(fileData))
+	defer func() { _ = file.Close() }()
+	info, err := file.Stat()
+	if err != nil {
+		return "", fmt.Errorf(
+			"file %s could not be inspected: %w",
+			localFileName,
+			err,
+		)
+	}
 
-	api, err := client.ApiClient()
+	endpoint := serverURL.ResolveReference(&url.URL{
+		Path: fmt.Sprintf("/api/workflows/%s/workspace", workflow),
+	})
+	query := endpoint.Query()
+	query.Set("access_token", token)
+	query.Set("file_name", workspaceFileName)
+	endpoint.RawQuery = query.Encode()
+	var body io.Reader = http.NoBody
+	if info.Size() > 0 {
+		body = io.LimitReader(file, info.Size())
+	}
+	request, err := http.NewRequest(http.MethodPost, endpoint.String(), body)
 	if err != nil {
 		return "", err
 	}
-	uploadResp, err := api.Operations.UploadFile(uploadParams)
+	request.ContentLength = info.Size()
+	request.Header.Set("Content-Type", "application/octet-stream")
+	response, err := httpClient.Do(request)
 	if err != nil {
 		return "", err
 	}
-	return uploadResp.GetPayload().Message, nil
+	defer func() { _ = response.Body.Close() }()
+	responseBody, err := io.ReadAll(response.Body)
+	if err != nil {
+		return "", fmt.Errorf("could not read upload response: %w", err)
+	}
+	var payload struct {
+		Message string `json:"message"`
+	}
+	if err := json.Unmarshal(responseBody, &payload); err != nil {
+		return "", fmt.Errorf("could not decode upload response: %w", err)
+	}
+	if response.StatusCode < http.StatusOK ||
+		response.StatusCode >= http.StatusMultipleChoices {
+		return "", fmt.Errorf("%s", payload.Message)
+	}
+	return payload.Message, nil
 }
 
 // DownloadFile downloads a file of the specified workflow.

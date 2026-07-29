@@ -15,12 +15,17 @@ import (
 	"net/url"
 	"reflect"
 
+	"reanahub/reana-client-go/client"
+
 	"github.com/spf13/viper"
 )
 
 // HandleApiError Handles API Error response which contains a payload with a message
 // Returns the original error when this doesn't happen
 func HandleApiError(err error) error {
+	if errors.Is(err, client.ErrResponseTooLarge) {
+		return client.ErrResponseTooLarge
+	}
 	_, isUrlErr := err.(*url.Error)
 	if isUrlErr {
 		return fmt.Errorf(
@@ -29,10 +34,15 @@ func HandleApiError(err error) error {
 		)
 	}
 
-	if errValue := reflect.Indirect(reflect.ValueOf(err)); errValue.Kind() == reflect.Struct {
-		if payload := reflect.Indirect(errValue.FieldByName("Payload")); payload.Kind() == reflect.Struct {
-			if message := payload.FieldByName("Message"); message.Kind() == reflect.String {
-				return errors.New(message.String())
+	for current := err; current != nil; current = errors.Unwrap(current) {
+		errValue := reflect.Indirect(reflect.ValueOf(current))
+		if errValue.Kind() == reflect.Struct {
+			payload := reflect.Indirect(errValue.FieldByName("Payload"))
+			if payload.Kind() == reflect.Struct {
+				message := reflect.Indirect(payload.FieldByName("Message"))
+				if message.Kind() == reflect.String {
+					return errors.New(message.String())
+				}
 			}
 		}
 	}

@@ -17,6 +17,8 @@ import (
 	"github.com/go-openapi/strfmt"
 	"github.com/go-openapi/swag"
 	"github.com/go-openapi/validate"
+
+	"reanahub/reana-client-go/models"
 )
 
 // LaunchReader is a Reader for the Launch structure.
@@ -39,8 +41,26 @@ func (o *LaunchReader) ReadResponse(response runtime.ClientResponse, consumer ru
 			return nil, err
 		}
 		return nil, result
+	case 409:
+		result := NewLaunchConflict()
+		if err := result.readResponse(response, consumer, o.formats); err != nil {
+			return nil, err
+		}
+		return nil, result
+	case 429:
+		result := NewLaunchTooManyRequests()
+		if err := result.readResponse(response, consumer, o.formats); err != nil {
+			return nil, err
+		}
+		return nil, result
 	case 500:
 		result := NewLaunchInternalServerError()
+		if err := result.readResponse(response, consumer, o.formats); err != nil {
+			return nil, err
+		}
+		return nil, result
+	case 503:
+		result := NewLaunchServiceUnavailable()
 		if err := result.readResponse(response, consumer, o.formats); err != nil {
 			return nil, err
 		}
@@ -190,6 +210,146 @@ func (o *LaunchBadRequest) readResponse(response runtime.ClientResponse, consume
 	return nil
 }
 
+// NewLaunchConflict creates a LaunchConflict with default headers values
+func NewLaunchConflict() *LaunchConflict {
+	return &LaunchConflict{}
+}
+
+/*
+LaunchConflict describes a response with status code 409, with default header values.
+
+Another workflow-family mutation is in progress.
+*/
+type LaunchConflict struct {
+	Payload *models.ErrorResponse
+}
+
+// IsSuccess returns true when this launch conflict response has a 2xx status code
+func (o *LaunchConflict) IsSuccess() bool {
+	return false
+}
+
+// IsRedirect returns true when this launch conflict response has a 3xx status code
+func (o *LaunchConflict) IsRedirect() bool {
+	return false
+}
+
+// IsClientError returns true when this launch conflict response has a 4xx status code
+func (o *LaunchConflict) IsClientError() bool {
+	return true
+}
+
+// IsServerError returns true when this launch conflict response has a 5xx status code
+func (o *LaunchConflict) IsServerError() bool {
+	return false
+}
+
+// IsCode returns true when this launch conflict response a status code equal to that given
+func (o *LaunchConflict) IsCode(code int) bool {
+	return code == 409
+}
+
+// Code gets the status code for the launch conflict response
+func (o *LaunchConflict) Code() int {
+	return 409
+}
+
+func (o *LaunchConflict) Error() string {
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[POST /api/launch][%d] launchConflict %s", 409, payload)
+}
+
+func (o *LaunchConflict) String() string {
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[POST /api/launch][%d] launchConflict %s", 409, payload)
+}
+
+func (o *LaunchConflict) GetPayload() *models.ErrorResponse {
+	return o.Payload
+}
+
+func (o *LaunchConflict) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
+
+	o.Payload = new(models.ErrorResponse)
+
+	// response payload
+	if err := consumer.Consume(response.Body(), o.Payload); err != nil && !stderrors.Is(err, io.EOF) {
+		return err
+	}
+
+	return nil
+}
+
+// NewLaunchTooManyRequests creates a LaunchTooManyRequests with default headers values
+func NewLaunchTooManyRequests() *LaunchTooManyRequests {
+	return &LaunchTooManyRequests{}
+}
+
+/*
+LaunchTooManyRequests describes a response with status code 429, with default header values.
+
+Request rate limit exceeded.
+*/
+type LaunchTooManyRequests struct {
+	Payload *LaunchTooManyRequestsBody
+}
+
+// IsSuccess returns true when this launch too many requests response has a 2xx status code
+func (o *LaunchTooManyRequests) IsSuccess() bool {
+	return false
+}
+
+// IsRedirect returns true when this launch too many requests response has a 3xx status code
+func (o *LaunchTooManyRequests) IsRedirect() bool {
+	return false
+}
+
+// IsClientError returns true when this launch too many requests response has a 4xx status code
+func (o *LaunchTooManyRequests) IsClientError() bool {
+	return true
+}
+
+// IsServerError returns true when this launch too many requests response has a 5xx status code
+func (o *LaunchTooManyRequests) IsServerError() bool {
+	return false
+}
+
+// IsCode returns true when this launch too many requests response a status code equal to that given
+func (o *LaunchTooManyRequests) IsCode(code int) bool {
+	return code == 429
+}
+
+// Code gets the status code for the launch too many requests response
+func (o *LaunchTooManyRequests) Code() int {
+	return 429
+}
+
+func (o *LaunchTooManyRequests) Error() string {
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[POST /api/launch][%d] launchTooManyRequests %s", 429, payload)
+}
+
+func (o *LaunchTooManyRequests) String() string {
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[POST /api/launch][%d] launchTooManyRequests %s", 429, payload)
+}
+
+func (o *LaunchTooManyRequests) GetPayload() *LaunchTooManyRequestsBody {
+	return o.Payload
+}
+
+func (o *LaunchTooManyRequests) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
+
+	o.Payload = new(LaunchTooManyRequestsBody)
+
+	// response payload
+	if err := consumer.Consume(response.Body(), o.Payload); err != nil && !stderrors.Is(err, io.EOF) {
+		return err
+	}
+
+	return nil
+}
+
 // NewLaunchInternalServerError creates a LaunchInternalServerError with default headers values
 func NewLaunchInternalServerError() *LaunchInternalServerError {
 	return &LaunchInternalServerError{}
@@ -251,6 +411,76 @@ func (o *LaunchInternalServerError) GetPayload() *LaunchInternalServerErrorBody 
 func (o *LaunchInternalServerError) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
 	o.Payload = new(LaunchInternalServerErrorBody)
+
+	// response payload
+	if err := consumer.Consume(response.Body(), o.Payload); err != nil && !stderrors.Is(err, io.EOF) {
+		return err
+	}
+
+	return nil
+}
+
+// NewLaunchServiceUnavailable creates a LaunchServiceUnavailable with default headers values
+func NewLaunchServiceUnavailable() *LaunchServiceUnavailable {
+	return &LaunchServiceUnavailable{}
+}
+
+/*
+LaunchServiceUnavailable describes a response with status code 503, with default header values.
+
+Workspace mutation or controller service is unavailable.
+*/
+type LaunchServiceUnavailable struct {
+	Payload *models.ErrorResponse
+}
+
+// IsSuccess returns true when this launch service unavailable response has a 2xx status code
+func (o *LaunchServiceUnavailable) IsSuccess() bool {
+	return false
+}
+
+// IsRedirect returns true when this launch service unavailable response has a 3xx status code
+func (o *LaunchServiceUnavailable) IsRedirect() bool {
+	return false
+}
+
+// IsClientError returns true when this launch service unavailable response has a 4xx status code
+func (o *LaunchServiceUnavailable) IsClientError() bool {
+	return false
+}
+
+// IsServerError returns true when this launch service unavailable response has a 5xx status code
+func (o *LaunchServiceUnavailable) IsServerError() bool {
+	return true
+}
+
+// IsCode returns true when this launch service unavailable response a status code equal to that given
+func (o *LaunchServiceUnavailable) IsCode(code int) bool {
+	return code == 503
+}
+
+// Code gets the status code for the launch service unavailable response
+func (o *LaunchServiceUnavailable) Code() int {
+	return 503
+}
+
+func (o *LaunchServiceUnavailable) Error() string {
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[POST /api/launch][%d] launchServiceUnavailable %s", 503, payload)
+}
+
+func (o *LaunchServiceUnavailable) String() string {
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[POST /api/launch][%d] launchServiceUnavailable %s", 503, payload)
+}
+
+func (o *LaunchServiceUnavailable) GetPayload() *models.ErrorResponse {
+	return o.Payload
+}
+
+func (o *LaunchServiceUnavailable) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
+
+	o.Payload = new(models.ErrorResponse)
 
 	// response payload
 	if err := consumer.Consume(response.Body(), o.Payload); err != nil && !stderrors.Is(err, io.EOF) {
@@ -588,6 +818,63 @@ func (o *LaunchOKBodyValidationWarnings) MarshalBinary() ([]byte, error) {
 // UnmarshalBinary interface implementation
 func (o *LaunchOKBodyValidationWarnings) UnmarshalBinary(b []byte) error {
 	var res LaunchOKBodyValidationWarnings
+	if err := swag.ReadJSON(b, &res); err != nil {
+		return err
+	}
+	*o = res
+	return nil
+}
+
+/*
+LaunchTooManyRequestsBody launch too many requests body
+swagger:model LaunchTooManyRequestsBody
+*/
+type LaunchTooManyRequestsBody struct {
+
+	// message
+	// Required: true
+	Message *string `json:"message"`
+}
+
+// Validate validates this launch too many requests body
+func (o *LaunchTooManyRequestsBody) Validate(formats strfmt.Registry) error {
+	var res []error
+
+	if err := o.validateMessage(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if len(res) > 0 {
+		return errors.CompositeValidationError(res...)
+	}
+	return nil
+}
+
+func (o *LaunchTooManyRequestsBody) validateMessage(formats strfmt.Registry) error {
+
+	if err := validate.Required("launchTooManyRequests"+"."+"message", "body", o.Message); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// ContextValidate validates this launch too many requests body based on context it is used
+func (o *LaunchTooManyRequestsBody) ContextValidate(ctx context.Context, formats strfmt.Registry) error {
+	return nil
+}
+
+// MarshalBinary interface implementation
+func (o *LaunchTooManyRequestsBody) MarshalBinary() ([]byte, error) {
+	if o == nil {
+		return nil, nil
+	}
+	return swag.WriteJSON(o)
+}
+
+// UnmarshalBinary interface implementation
+func (o *LaunchTooManyRequestsBody) UnmarshalBinary(b []byte) error {
+	var res LaunchTooManyRequestsBody
 	if err := swag.ReadJSON(b, &res); err != nil {
 		return err
 	}

@@ -75,7 +75,7 @@ type SetWorkflowStatusParams struct {
 
 	/* Status.
 
-	   Required. New workflow status.
+	   Required. New workflow status. The `start` value is retained for compatibility; new clients should use POST /api/workflows/<workflow_id_or_name>/start.
 	*/
 	Status string
 

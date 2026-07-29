@@ -112,8 +112,14 @@ swagger:model PingOKBody
 */
 type PingOKBody struct {
 
+	// Client-facing protocols implemented by this server. Absent on released servers that predate protocol negotiation.
+	APICapabilities []string `json:"api_capabilities"`
+
 	// message
 	Message string `json:"message,omitempty"`
+
+	// reana server version
+	ReanaServerVersion string `json:"reana_server_version,omitempty"`
 
 	// status
 	Status string `json:"status,omitempty"`

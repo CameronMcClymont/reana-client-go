@@ -15,6 +15,8 @@ import (
 	"github.com/go-openapi/runtime"
 	"github.com/go-openapi/strfmt"
 	"github.com/go-openapi/swag"
+
+	"reanahub/reana-client-go/models"
 )
 
 // PruneWorkspaceReader is a Reader for the PruneWorkspace structure.
@@ -49,8 +51,20 @@ func (o *PruneWorkspaceReader) ReadResponse(response runtime.ClientResponse, con
 			return nil, err
 		}
 		return nil, result
+	case 409:
+		result := NewPruneWorkspaceConflict()
+		if err := result.readResponse(response, consumer, o.formats); err != nil {
+			return nil, err
+		}
+		return nil, result
 	case 500:
 		result := NewPruneWorkspaceInternalServerError()
+		if err := result.readResponse(response, consumer, o.formats); err != nil {
+			return nil, err
+		}
+		return nil, result
+	case 503:
+		result := NewPruneWorkspaceServiceUnavailable()
 		if err := result.readResponse(response, consumer, o.formats); err != nil {
 			return nil, err
 		}
@@ -340,6 +354,76 @@ func (o *PruneWorkspaceNotFound) readResponse(response runtime.ClientResponse, c
 	return nil
 }
 
+// NewPruneWorkspaceConflict creates a PruneWorkspaceConflict with default headers values
+func NewPruneWorkspaceConflict() *PruneWorkspaceConflict {
+	return &PruneWorkspaceConflict{}
+}
+
+/*
+PruneWorkspaceConflict describes a response with status code 409, with default header values.
+
+The workspace is currently being mutated.
+*/
+type PruneWorkspaceConflict struct {
+	Payload *models.ErrorResponse
+}
+
+// IsSuccess returns true when this prune workspace conflict response has a 2xx status code
+func (o *PruneWorkspaceConflict) IsSuccess() bool {
+	return false
+}
+
+// IsRedirect returns true when this prune workspace conflict response has a 3xx status code
+func (o *PruneWorkspaceConflict) IsRedirect() bool {
+	return false
+}
+
+// IsClientError returns true when this prune workspace conflict response has a 4xx status code
+func (o *PruneWorkspaceConflict) IsClientError() bool {
+	return true
+}
+
+// IsServerError returns true when this prune workspace conflict response has a 5xx status code
+func (o *PruneWorkspaceConflict) IsServerError() bool {
+	return false
+}
+
+// IsCode returns true when this prune workspace conflict response a status code equal to that given
+func (o *PruneWorkspaceConflict) IsCode(code int) bool {
+	return code == 409
+}
+
+// Code gets the status code for the prune workspace conflict response
+func (o *PruneWorkspaceConflict) Code() int {
+	return 409
+}
+
+func (o *PruneWorkspaceConflict) Error() string {
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[POST /api/workflows/{workflow_id_or_name}/prune][%d] pruneWorkspaceConflict %s", 409, payload)
+}
+
+func (o *PruneWorkspaceConflict) String() string {
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[POST /api/workflows/{workflow_id_or_name}/prune][%d] pruneWorkspaceConflict %s", 409, payload)
+}
+
+func (o *PruneWorkspaceConflict) GetPayload() *models.ErrorResponse {
+	return o.Payload
+}
+
+func (o *PruneWorkspaceConflict) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
+
+	o.Payload = new(models.ErrorResponse)
+
+	// response payload
+	if err := consumer.Consume(response.Body(), o.Payload); err != nil && !stderrors.Is(err, io.EOF) {
+		return err
+	}
+
+	return nil
+}
+
 // NewPruneWorkspaceInternalServerError creates a PruneWorkspaceInternalServerError with default headers values
 func NewPruneWorkspaceInternalServerError() *PruneWorkspaceInternalServerError {
 	return &PruneWorkspaceInternalServerError{}
@@ -401,6 +485,76 @@ func (o *PruneWorkspaceInternalServerError) GetPayload() *PruneWorkspaceInternal
 func (o *PruneWorkspaceInternalServerError) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
 	o.Payload = new(PruneWorkspaceInternalServerErrorBody)
+
+	// response payload
+	if err := consumer.Consume(response.Body(), o.Payload); err != nil && !stderrors.Is(err, io.EOF) {
+		return err
+	}
+
+	return nil
+}
+
+// NewPruneWorkspaceServiceUnavailable creates a PruneWorkspaceServiceUnavailable with default headers values
+func NewPruneWorkspaceServiceUnavailable() *PruneWorkspaceServiceUnavailable {
+	return &PruneWorkspaceServiceUnavailable{}
+}
+
+/*
+PruneWorkspaceServiceUnavailable describes a response with status code 503, with default header values.
+
+Workspace mutation serialization is unavailable.
+*/
+type PruneWorkspaceServiceUnavailable struct {
+	Payload *models.ErrorResponse
+}
+
+// IsSuccess returns true when this prune workspace service unavailable response has a 2xx status code
+func (o *PruneWorkspaceServiceUnavailable) IsSuccess() bool {
+	return false
+}
+
+// IsRedirect returns true when this prune workspace service unavailable response has a 3xx status code
+func (o *PruneWorkspaceServiceUnavailable) IsRedirect() bool {
+	return false
+}
+
+// IsClientError returns true when this prune workspace service unavailable response has a 4xx status code
+func (o *PruneWorkspaceServiceUnavailable) IsClientError() bool {
+	return false
+}
+
+// IsServerError returns true when this prune workspace service unavailable response has a 5xx status code
+func (o *PruneWorkspaceServiceUnavailable) IsServerError() bool {
+	return true
+}
+
+// IsCode returns true when this prune workspace service unavailable response a status code equal to that given
+func (o *PruneWorkspaceServiceUnavailable) IsCode(code int) bool {
+	return code == 503
+}
+
+// Code gets the status code for the prune workspace service unavailable response
+func (o *PruneWorkspaceServiceUnavailable) Code() int {
+	return 503
+}
+
+func (o *PruneWorkspaceServiceUnavailable) Error() string {
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[POST /api/workflows/{workflow_id_or_name}/prune][%d] pruneWorkspaceServiceUnavailable %s", 503, payload)
+}
+
+func (o *PruneWorkspaceServiceUnavailable) String() string {
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[POST /api/workflows/{workflow_id_or_name}/prune][%d] pruneWorkspaceServiceUnavailable %s", 503, payload)
+}
+
+func (o *PruneWorkspaceServiceUnavailable) GetPayload() *models.ErrorResponse {
+	return o.Payload
+}
+
+func (o *PruneWorkspaceServiceUnavailable) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
+
+	o.Payload = new(models.ErrorResponse)
 
 	// response payload
 	if err := consumer.Consume(response.Body(), o.Payload); err != nil && !stderrors.Is(err, io.EOF) {

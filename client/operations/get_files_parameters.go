@@ -82,7 +82,7 @@ type GetFilesParams struct {
 
 	/* Search.
 
-	   Filter workflow workspace files.
+	   Filter workflow workspace files by file name, size, or modification date.
 	*/
 	Search *string
 

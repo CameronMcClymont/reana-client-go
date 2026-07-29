@@ -3771,7 +3771,7 @@ type InfoOKBodyVettedContainerImagesEnabled struct {
 	Title string `json:"title,omitempty"`
 
 	// value
-	Value bool `json:"value"`
+	Value bool `json:"value,omitempty"`
 }
 
 // Validate validates this info o k body vetted container images enabled

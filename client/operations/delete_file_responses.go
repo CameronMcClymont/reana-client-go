@@ -16,6 +16,8 @@ import (
 	"github.com/go-openapi/runtime"
 	"github.com/go-openapi/strfmt"
 	"github.com/go-openapi/swag"
+
+	"reanahub/reana-client-go/models"
 )
 
 // DeleteFileReader is a Reader for the DeleteFile structure.
@@ -44,8 +46,20 @@ func (o *DeleteFileReader) ReadResponse(response runtime.ClientResponse, consume
 			return nil, err
 		}
 		return nil, result
+	case 409:
+		result := NewDeleteFileConflict()
+		if err := result.readResponse(response, consumer, o.formats); err != nil {
+			return nil, err
+		}
+		return nil, result
 	case 500:
 		result := NewDeleteFileInternalServerError()
+		if err := result.readResponse(response, consumer, o.formats); err != nil {
+			return nil, err
+		}
+		return nil, result
+	case 503:
+		result := NewDeleteFileServiceUnavailable()
 		if err := result.readResponse(response, consumer, o.formats); err != nil {
 			return nil, err
 		}
@@ -265,6 +279,76 @@ func (o *DeleteFileNotFound) readResponse(response runtime.ClientResponse, consu
 	return nil
 }
 
+// NewDeleteFileConflict creates a DeleteFileConflict with default headers values
+func NewDeleteFileConflict() *DeleteFileConflict {
+	return &DeleteFileConflict{}
+}
+
+/*
+DeleteFileConflict describes a response with status code 409, with default header values.
+
+The workspace is currently being mutated.
+*/
+type DeleteFileConflict struct {
+	Payload *models.ErrorResponse
+}
+
+// IsSuccess returns true when this delete file conflict response has a 2xx status code
+func (o *DeleteFileConflict) IsSuccess() bool {
+	return false
+}
+
+// IsRedirect returns true when this delete file conflict response has a 3xx status code
+func (o *DeleteFileConflict) IsRedirect() bool {
+	return false
+}
+
+// IsClientError returns true when this delete file conflict response has a 4xx status code
+func (o *DeleteFileConflict) IsClientError() bool {
+	return true
+}
+
+// IsServerError returns true when this delete file conflict response has a 5xx status code
+func (o *DeleteFileConflict) IsServerError() bool {
+	return false
+}
+
+// IsCode returns true when this delete file conflict response a status code equal to that given
+func (o *DeleteFileConflict) IsCode(code int) bool {
+	return code == 409
+}
+
+// Code gets the status code for the delete file conflict response
+func (o *DeleteFileConflict) Code() int {
+	return 409
+}
+
+func (o *DeleteFileConflict) Error() string {
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[DELETE /api/workflows/{workflow_id_or_name}/workspace/{file_name}][%d] deleteFileConflict %s", 409, payload)
+}
+
+func (o *DeleteFileConflict) String() string {
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[DELETE /api/workflows/{workflow_id_or_name}/workspace/{file_name}][%d] deleteFileConflict %s", 409, payload)
+}
+
+func (o *DeleteFileConflict) GetPayload() *models.ErrorResponse {
+	return o.Payload
+}
+
+func (o *DeleteFileConflict) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
+
+	o.Payload = new(models.ErrorResponse)
+
+	// response payload
+	if err := consumer.Consume(response.Body(), o.Payload); err != nil && !stderrors.Is(err, io.EOF) {
+		return err
+	}
+
+	return nil
+}
+
 // NewDeleteFileInternalServerError creates a DeleteFileInternalServerError with default headers values
 func NewDeleteFileInternalServerError() *DeleteFileInternalServerError {
 	return &DeleteFileInternalServerError{}
@@ -326,6 +410,76 @@ func (o *DeleteFileInternalServerError) GetPayload() *DeleteFileInternalServerEr
 func (o *DeleteFileInternalServerError) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
 	o.Payload = new(DeleteFileInternalServerErrorBody)
+
+	// response payload
+	if err := consumer.Consume(response.Body(), o.Payload); err != nil && !stderrors.Is(err, io.EOF) {
+		return err
+	}
+
+	return nil
+}
+
+// NewDeleteFileServiceUnavailable creates a DeleteFileServiceUnavailable with default headers values
+func NewDeleteFileServiceUnavailable() *DeleteFileServiceUnavailable {
+	return &DeleteFileServiceUnavailable{}
+}
+
+/*
+DeleteFileServiceUnavailable describes a response with status code 503, with default header values.
+
+Workspace mutation serialization is unavailable.
+*/
+type DeleteFileServiceUnavailable struct {
+	Payload *models.ErrorResponse
+}
+
+// IsSuccess returns true when this delete file service unavailable response has a 2xx status code
+func (o *DeleteFileServiceUnavailable) IsSuccess() bool {
+	return false
+}
+
+// IsRedirect returns true when this delete file service unavailable response has a 3xx status code
+func (o *DeleteFileServiceUnavailable) IsRedirect() bool {
+	return false
+}
+
+// IsClientError returns true when this delete file service unavailable response has a 4xx status code
+func (o *DeleteFileServiceUnavailable) IsClientError() bool {
+	return false
+}
+
+// IsServerError returns true when this delete file service unavailable response has a 5xx status code
+func (o *DeleteFileServiceUnavailable) IsServerError() bool {
+	return true
+}
+
+// IsCode returns true when this delete file service unavailable response a status code equal to that given
+func (o *DeleteFileServiceUnavailable) IsCode(code int) bool {
+	return code == 503
+}
+
+// Code gets the status code for the delete file service unavailable response
+func (o *DeleteFileServiceUnavailable) Code() int {
+	return 503
+}
+
+func (o *DeleteFileServiceUnavailable) Error() string {
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[DELETE /api/workflows/{workflow_id_or_name}/workspace/{file_name}][%d] deleteFileServiceUnavailable %s", 503, payload)
+}
+
+func (o *DeleteFileServiceUnavailable) String() string {
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[DELETE /api/workflows/{workflow_id_or_name}/workspace/{file_name}][%d] deleteFileServiceUnavailable %s", 503, payload)
+}
+
+func (o *DeleteFileServiceUnavailable) GetPayload() *models.ErrorResponse {
+	return o.Payload
+}
+
+func (o *DeleteFileServiceUnavailable) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
+
+	o.Payload = new(models.ErrorResponse)
 
 	// response payload
 	if err := consumer.Consume(response.Body(), o.Payload); err != nil && !stderrors.Is(err, io.EOF) {

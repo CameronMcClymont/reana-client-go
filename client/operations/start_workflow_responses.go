@@ -12,9 +12,13 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/go-openapi/errors"
 	"github.com/go-openapi/runtime"
 	"github.com/go-openapi/strfmt"
 	"github.com/go-openapi/swag"
+	"github.com/go-openapi/validate"
+
+	"reanahub/reana-client-go/models"
 )
 
 // StartWorkflowReader is a Reader for the StartWorkflow structure.
@@ -55,6 +59,12 @@ func (o *StartWorkflowReader) ReadResponse(response runtime.ClientResponse, cons
 			return nil, err
 		}
 		return nil, result
+	case 429:
+		result := NewStartWorkflowTooManyRequests()
+		if err := result.readResponse(response, consumer, o.formats); err != nil {
+			return nil, err
+		}
+		return nil, result
 	case 500:
 		result := NewStartWorkflowInternalServerError()
 		if err := result.readResponse(response, consumer, o.formats); err != nil {
@@ -63,6 +73,12 @@ func (o *StartWorkflowReader) ReadResponse(response runtime.ClientResponse, cons
 		return nil, result
 	case 501:
 		result := NewStartWorkflowNotImplemented()
+		if err := result.readResponse(response, consumer, o.formats); err != nil {
+			return nil, err
+		}
+		return nil, result
+	case 503:
+		result := NewStartWorkflowServiceUnavailable()
 		if err := result.readResponse(response, consumer, o.formats); err != nil {
 			return nil, err
 		}
@@ -83,7 +99,7 @@ StartWorkflowOK describes a response with status code 200, with default header v
 Request succeeded. Info about a workflow, including the execution status is returned.
 */
 type StartWorkflowOK struct {
-	Payload *StartWorkflowOKBody
+	Payload *models.WorkflowSubmissionResponse
 }
 
 // IsSuccess returns true when this start workflow o k response has a 2xx status code
@@ -126,13 +142,13 @@ func (o *StartWorkflowOK) String() string {
 	return fmt.Sprintf("[POST /api/workflows/{workflow_id_or_name}/start][%d] startWorkflowOK %s", 200, payload)
 }
 
-func (o *StartWorkflowOK) GetPayload() *StartWorkflowOKBody {
+func (o *StartWorkflowOK) GetPayload() *models.WorkflowSubmissionResponse {
 	return o.Payload
 }
 
 func (o *StartWorkflowOK) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
-	o.Payload = new(StartWorkflowOKBody)
+	o.Payload = new(models.WorkflowSubmissionResponse)
 
 	// response payload
 	if err := consumer.Consume(response.Body(), o.Payload); err != nil && !stderrors.Is(err, io.EOF) {
@@ -422,6 +438,76 @@ func (o *StartWorkflowConflict) readResponse(response runtime.ClientResponse, co
 	return nil
 }
 
+// NewStartWorkflowTooManyRequests creates a StartWorkflowTooManyRequests with default headers values
+func NewStartWorkflowTooManyRequests() *StartWorkflowTooManyRequests {
+	return &StartWorkflowTooManyRequests{}
+}
+
+/*
+StartWorkflowTooManyRequests describes a response with status code 429, with default header values.
+
+Request rate limit exceeded.
+*/
+type StartWorkflowTooManyRequests struct {
+	Payload *StartWorkflowTooManyRequestsBody
+}
+
+// IsSuccess returns true when this start workflow too many requests response has a 2xx status code
+func (o *StartWorkflowTooManyRequests) IsSuccess() bool {
+	return false
+}
+
+// IsRedirect returns true when this start workflow too many requests response has a 3xx status code
+func (o *StartWorkflowTooManyRequests) IsRedirect() bool {
+	return false
+}
+
+// IsClientError returns true when this start workflow too many requests response has a 4xx status code
+func (o *StartWorkflowTooManyRequests) IsClientError() bool {
+	return true
+}
+
+// IsServerError returns true when this start workflow too many requests response has a 5xx status code
+func (o *StartWorkflowTooManyRequests) IsServerError() bool {
+	return false
+}
+
+// IsCode returns true when this start workflow too many requests response a status code equal to that given
+func (o *StartWorkflowTooManyRequests) IsCode(code int) bool {
+	return code == 429
+}
+
+// Code gets the status code for the start workflow too many requests response
+func (o *StartWorkflowTooManyRequests) Code() int {
+	return 429
+}
+
+func (o *StartWorkflowTooManyRequests) Error() string {
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[POST /api/workflows/{workflow_id_or_name}/start][%d] startWorkflowTooManyRequests %s", 429, payload)
+}
+
+func (o *StartWorkflowTooManyRequests) String() string {
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[POST /api/workflows/{workflow_id_or_name}/start][%d] startWorkflowTooManyRequests %s", 429, payload)
+}
+
+func (o *StartWorkflowTooManyRequests) GetPayload() *StartWorkflowTooManyRequestsBody {
+	return o.Payload
+}
+
+func (o *StartWorkflowTooManyRequests) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
+
+	o.Payload = new(StartWorkflowTooManyRequestsBody)
+
+	// response payload
+	if err := consumer.Consume(response.Body(), o.Payload); err != nil && !stderrors.Is(err, io.EOF) {
+		return err
+	}
+
+	return nil
+}
+
 // NewStartWorkflowInternalServerError creates a StartWorkflowInternalServerError with default headers values
 func NewStartWorkflowInternalServerError() *StartWorkflowInternalServerError {
 	return &StartWorkflowInternalServerError{}
@@ -562,6 +648,76 @@ func (o *StartWorkflowNotImplemented) readResponse(response runtime.ClientRespon
 	return nil
 }
 
+// NewStartWorkflowServiceUnavailable creates a StartWorkflowServiceUnavailable with default headers values
+func NewStartWorkflowServiceUnavailable() *StartWorkflowServiceUnavailable {
+	return &StartWorkflowServiceUnavailable{}
+}
+
+/*
+StartWorkflowServiceUnavailable describes a response with status code 503, with default header values.
+
+Workspace mutation serialization is unavailable.
+*/
+type StartWorkflowServiceUnavailable struct {
+	Payload *models.ErrorResponse
+}
+
+// IsSuccess returns true when this start workflow service unavailable response has a 2xx status code
+func (o *StartWorkflowServiceUnavailable) IsSuccess() bool {
+	return false
+}
+
+// IsRedirect returns true when this start workflow service unavailable response has a 3xx status code
+func (o *StartWorkflowServiceUnavailable) IsRedirect() bool {
+	return false
+}
+
+// IsClientError returns true when this start workflow service unavailable response has a 4xx status code
+func (o *StartWorkflowServiceUnavailable) IsClientError() bool {
+	return false
+}
+
+// IsServerError returns true when this start workflow service unavailable response has a 5xx status code
+func (o *StartWorkflowServiceUnavailable) IsServerError() bool {
+	return true
+}
+
+// IsCode returns true when this start workflow service unavailable response a status code equal to that given
+func (o *StartWorkflowServiceUnavailable) IsCode(code int) bool {
+	return code == 503
+}
+
+// Code gets the status code for the start workflow service unavailable response
+func (o *StartWorkflowServiceUnavailable) Code() int {
+	return 503
+}
+
+func (o *StartWorkflowServiceUnavailable) Error() string {
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[POST /api/workflows/{workflow_id_or_name}/start][%d] startWorkflowServiceUnavailable %s", 503, payload)
+}
+
+func (o *StartWorkflowServiceUnavailable) String() string {
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[POST /api/workflows/{workflow_id_or_name}/start][%d] startWorkflowServiceUnavailable %s", 503, payload)
+}
+
+func (o *StartWorkflowServiceUnavailable) GetPayload() *models.ErrorResponse {
+	return o.Payload
+}
+
+func (o *StartWorkflowServiceUnavailable) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
+
+	o.Payload = new(models.ErrorResponse)
+
+	// response payload
+	if err := consumer.Consume(response.Body(), o.Payload); err != nil && !stderrors.Is(err, io.EOF) {
+		return err
+	}
+
+	return nil
+}
+
 /*
 StartWorkflowBadRequestBody start workflow bad request body
 swagger:model StartWorkflowBadRequestBody
@@ -611,9 +767,6 @@ type StartWorkflowBody struct {
 
 	// Optional. Additional operational options for workflow execution.
 	OperationalOptions any `json:"operational_options,omitempty"`
-
-	// Optional. Replace the original workflow specification with the given one. Only considered when restarting a workflow.
-	ReanaSpecification any `json:"reana_specification,omitempty"`
 
 	// Optional. If true, restart the given workflow.
 	Restart bool `json:"restart,omitempty"`
@@ -838,39 +991,46 @@ func (o *StartWorkflowNotImplementedBody) UnmarshalBinary(b []byte) error {
 }
 
 /*
-StartWorkflowOKBody start workflow o k body
-swagger:model StartWorkflowOKBody
+StartWorkflowTooManyRequestsBody start workflow too many requests body
+swagger:model StartWorkflowTooManyRequestsBody
 */
-type StartWorkflowOKBody struct {
+type StartWorkflowTooManyRequestsBody struct {
 
 	// message
-	Message string `json:"message,omitempty"`
-
-	// status
-	Status string `json:"status,omitempty"`
-
-	// user
-	User string `json:"user,omitempty"`
-
-	// workflow id
-	WorkflowID string `json:"workflow_id,omitempty"`
-
-	// workflow name
-	WorkflowName string `json:"workflow_name,omitempty"`
+	// Required: true
+	Message *string `json:"message"`
 }
 
-// Validate validates this start workflow o k body
-func (o *StartWorkflowOKBody) Validate(formats strfmt.Registry) error {
+// Validate validates this start workflow too many requests body
+func (o *StartWorkflowTooManyRequestsBody) Validate(formats strfmt.Registry) error {
+	var res []error
+
+	if err := o.validateMessage(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if len(res) > 0 {
+		return errors.CompositeValidationError(res...)
+	}
 	return nil
 }
 
-// ContextValidate validates this start workflow o k body based on context it is used
-func (o *StartWorkflowOKBody) ContextValidate(ctx context.Context, formats strfmt.Registry) error {
+func (o *StartWorkflowTooManyRequestsBody) validateMessage(formats strfmt.Registry) error {
+
+	if err := validate.Required("startWorkflowTooManyRequests"+"."+"message", "body", o.Message); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// ContextValidate validates this start workflow too many requests body based on context it is used
+func (o *StartWorkflowTooManyRequestsBody) ContextValidate(ctx context.Context, formats strfmt.Registry) error {
 	return nil
 }
 
 // MarshalBinary interface implementation
-func (o *StartWorkflowOKBody) MarshalBinary() ([]byte, error) {
+func (o *StartWorkflowTooManyRequestsBody) MarshalBinary() ([]byte, error) {
 	if o == nil {
 		return nil, nil
 	}
@@ -878,8 +1038,8 @@ func (o *StartWorkflowOKBody) MarshalBinary() ([]byte, error) {
 }
 
 // UnmarshalBinary interface implementation
-func (o *StartWorkflowOKBody) UnmarshalBinary(b []byte) error {
-	var res StartWorkflowOKBody
+func (o *StartWorkflowTooManyRequestsBody) UnmarshalBinary(b []byte) error {
+	var res StartWorkflowTooManyRequestsBody
 	if err := swag.ReadJSON(b, &res); err != nil {
 		return err
 	}

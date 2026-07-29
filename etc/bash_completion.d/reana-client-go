@@ -449,6 +449,57 @@ _reana-client-go_completion()
     noun_aliases=()
 }
 
+_reana-client-go_create()
+{
+    last_command="reana-client-go_create"
+
+    command_aliases=()
+
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+    flags+=("--access-token=")
+    two_word_flags+=("--access-token")
+    two_word_flags+=("-t")
+    local_nonpersistent_flags+=("--access-token")
+    local_nonpersistent_flags+=("--access-token=")
+    local_nonpersistent_flags+=("-t")
+    flags+=("--file=")
+    two_word_flags+=("--file")
+    two_word_flags+=("-f")
+    local_nonpersistent_flags+=("--file")
+    local_nonpersistent_flags+=("--file=")
+    local_nonpersistent_flags+=("-f")
+    flags+=("--name=")
+    two_word_flags+=("--name")
+    two_word_flags+=("-n")
+    local_nonpersistent_flags+=("--name")
+    local_nonpersistent_flags+=("--name=")
+    local_nonpersistent_flags+=("-n")
+    flags+=("--skip-validation")
+    local_nonpersistent_flags+=("--skip-validation")
+    flags+=("--workflow=")
+    two_word_flags+=("--workflow")
+    two_word_flags+=("-w")
+    local_nonpersistent_flags+=("--workflow")
+    local_nonpersistent_flags+=("--workflow=")
+    local_nonpersistent_flags+=("-w")
+    flags+=("--loglevel=")
+    two_word_flags+=("--loglevel")
+    two_word_flags+=("-l")
+    flags+=("--profile=")
+    two_word_flags+=("--profile")
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
 _reana-client-go_delete()
 {
     last_command="reana-client-go_delete"
@@ -1234,6 +1285,71 @@ _reana-client-go_rm()
     noun_aliases=()
 }
 
+_reana-client-go_run()
+{
+    last_command="reana-client-go_run"
+
+    command_aliases=()
+
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+    flags+=("--access-token=")
+    two_word_flags+=("--access-token")
+    two_word_flags+=("-t")
+    local_nonpersistent_flags+=("--access-token")
+    local_nonpersistent_flags+=("--access-token=")
+    local_nonpersistent_flags+=("-t")
+    flags+=("--file=")
+    two_word_flags+=("--file")
+    two_word_flags+=("-f")
+    local_nonpersistent_flags+=("--file")
+    local_nonpersistent_flags+=("--file=")
+    local_nonpersistent_flags+=("-f")
+    flags+=("--follow")
+    local_nonpersistent_flags+=("--follow")
+    flags+=("--name=")
+    two_word_flags+=("--name")
+    two_word_flags+=("-n")
+    local_nonpersistent_flags+=("--name")
+    local_nonpersistent_flags+=("--name=")
+    local_nonpersistent_flags+=("-n")
+    flags+=("--option=")
+    two_word_flags+=("--option")
+    two_word_flags+=("-o")
+    local_nonpersistent_flags+=("--option")
+    local_nonpersistent_flags+=("--option=")
+    local_nonpersistent_flags+=("-o")
+    flags+=("--parameter=")
+    two_word_flags+=("--parameter")
+    two_word_flags+=("-p")
+    local_nonpersistent_flags+=("--parameter")
+    local_nonpersistent_flags+=("--parameter=")
+    local_nonpersistent_flags+=("-p")
+    flags+=("--skip-validation")
+    local_nonpersistent_flags+=("--skip-validation")
+    flags+=("--workflow=")
+    two_word_flags+=("--workflow")
+    two_word_flags+=("-w")
+    local_nonpersistent_flags+=("--workflow")
+    local_nonpersistent_flags+=("--workflow=")
+    local_nonpersistent_flags+=("-w")
+    flags+=("--loglevel=")
+    two_word_flags+=("--loglevel")
+    two_word_flags+=("-l")
+    flags+=("--profile=")
+    two_word_flags+=("--profile")
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
 _reana-client-go_secrets-add()
 {
     last_command="reana-client-go_secrets-add"
@@ -1658,6 +1774,49 @@ _reana-client-go_upload()
     noun_aliases=()
 }
 
+_reana-client-go_validate()
+{
+    last_command="reana-client-go_validate"
+
+    command_aliases=()
+
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+    flags+=("--access-token=")
+    two_word_flags+=("--access-token")
+    two_word_flags+=("-t")
+    local_nonpersistent_flags+=("--access-token")
+    local_nonpersistent_flags+=("--access-token=")
+    local_nonpersistent_flags+=("-t")
+    flags+=("--environments")
+    local_nonpersistent_flags+=("--environments")
+    flags+=("--file=")
+    two_word_flags+=("--file")
+    two_word_flags+=("-f")
+    local_nonpersistent_flags+=("--file")
+    local_nonpersistent_flags+=("--file=")
+    local_nonpersistent_flags+=("-f")
+    flags+=("--pull")
+    local_nonpersistent_flags+=("--pull")
+    flags+=("--server-capabilities")
+    local_nonpersistent_flags+=("--server-capabilities")
+    flags+=("--loglevel=")
+    two_word_flags+=("--loglevel")
+    two_word_flags+=("-l")
+    flags+=("--profile=")
+    two_word_flags+=("--profile")
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
 _reana-client-go_version()
 {
     last_command="reana-client-go_version"
@@ -1692,6 +1851,7 @@ _reana-client-go_root_command()
     commands=()
     commands+=("close")
     commands+=("completion")
+    commands+=("create")
     commands+=("delete")
     commands+=("diff")
     commands+=("download")
@@ -1709,6 +1869,7 @@ _reana-client-go_root_command()
     commands+=("restart")
     commands+=("retention-rules-list")
     commands+=("rm")
+    commands+=("run")
     commands+=("secrets-add")
     commands+=("secrets-delete")
     commands+=("secrets-list")
@@ -1719,6 +1880,7 @@ _reana-client-go_root_command()
     commands+=("status")
     commands+=("stop")
     commands+=("upload")
+    commands+=("validate")
     commands+=("version")
 
     flags=()

@@ -16,6 +16,7 @@ import (
 	"github.com/go-openapi/runtime"
 	"github.com/go-openapi/strfmt"
 	"github.com/go-openapi/swag"
+	"github.com/go-openapi/validate"
 )
 
 // GetYouReader is a Reader for the GetYou structure.
@@ -755,11 +756,12 @@ type GetYouOKBodyQuotaCPU struct {
 	// limit
 	Limit *GetYouOKBodyQuotaCPULimit `json:"limit,omitempty"`
 
-	// quota period months
+	// Length of the active CPU accounting window in months. `null` if periodic accounting is disabled.
 	QuotaPeriodMonths *int64 `json:"quota_period_months,omitempty"`
 
-	// quota period start at
-	QuotaPeriodStartAt *string `json:"quota_period_start_at,omitempty"`
+	// Start timestamp of the active CPU accounting window. `null` if periodic accounting is disabled.
+	// Format: date-time
+	QuotaPeriodStartAt *strfmt.DateTime `json:"quota_period_start_at,omitempty"`
 
 	// usage
 	Usage *GetYouOKBodyQuotaCPUUsage `json:"usage,omitempty"`
@@ -770,6 +772,10 @@ func (o *GetYouOKBodyQuotaCPU) Validate(formats strfmt.Registry) error {
 	var res []error
 
 	if err := o.validateLimit(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if err := o.validateQuotaPeriodStartAt(formats); err != nil {
 		res = append(res, err)
 	}
 
@@ -801,6 +807,18 @@ func (o *GetYouOKBodyQuotaCPU) validateLimit(formats strfmt.Registry) error {
 
 			return err
 		}
+	}
+
+	return nil
+}
+
+func (o *GetYouOKBodyQuotaCPU) validateQuotaPeriodStartAt(formats strfmt.Registry) error {
+	if swag.IsZero(o.QuotaPeriodStartAt) { // not required
+		return nil
+	}
+
+	if err := validate.FormatOf("getYouOK"+"."+"quota"+"."+"cpu"+"."+"quota_period_start_at", "body", "date-time", o.QuotaPeriodStartAt.String(), formats); err != nil {
+		return err
 	}
 
 	return nil

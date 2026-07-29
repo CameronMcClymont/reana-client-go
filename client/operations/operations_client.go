@@ -79,6 +79,11 @@ func WithContentTypeApplicationOctetStream(r *runtime.ClientOperation) {
 	r.ConsumesMediaTypes = []string{"application/octet-stream"}
 }
 
+// WithContentTypeMultipartFormData sets the Content-Type header to "multipart/form-data".
+func WithContentTypeMultipartFormData(r *runtime.ClientOperation) {
+	r.ConsumesMediaTypes = []string{"multipart/form-data"}
+}
+
 // WithAccept allows the client to force the Accept header
 // to negotiate a specific Producer from the server.
 //
@@ -130,11 +135,15 @@ type ClientService interface {
 
 	DeleteSecrets(params *DeleteSecretsParams, opts ...ClientOption) (*DeleteSecretsOK, error)
 
+	DeleteToken(params *DeleteTokenParams, opts ...ClientOption) (*DeleteTokenOK, error)
+
 	DownloadFile(params *DownloadFileParams, writer io.Writer, opts ...ClientOption) (*DownloadFileOK, error)
 
 	GetConfig(params *GetConfigParams, opts ...ClientOption) (*GetConfigOK, error)
 
 	GetFiles(params *GetFilesParams, opts ...ClientOption) (*GetFilesOK, error)
+
+	GetQuotaUsage(params *GetQuotaUsageParams, opts ...ClientOption) (*GetQuotaUsageOK, error)
 
 	GetSecrets(params *GetSecretsParams, opts ...ClientOption) (*GetSecretsOK, error)
 
@@ -176,11 +185,17 @@ type ClientService interface {
 
 	OpenInteractiveSession(params *OpenInteractiveSessionParams, opts ...ClientOption) (*OpenInteractiveSessionOK, error)
 
+	PatchQuota(params *PatchQuotaParams, opts ...ClientOption) (*PatchQuotaOK, error)
+
 	Ping(params *PingParams, opts ...ClientOption) (*PingOK, error)
 
 	PruneWorkspace(params *PruneWorkspaceParams, opts ...ClientOption) (*PruneWorkspaceOK, error)
 
 	RequestToken(params *RequestTokenParams, opts ...ClientOption) (*RequestTokenOK, error)
+
+	RestartWorkflow(params *RestartWorkflowParams, opts ...ClientOption) (*RestartWorkflowOK, error)
+
+	SetQuotaLimit(params *SetQuotaLimitParams, opts ...ClientOption) (*SetQuotaLimitOK, error)
 
 	SetWorkflowStatus(params *SetWorkflowStatusParams, opts ...ClientOption) (*SetWorkflowStatusOK, error)
 
@@ -193,6 +208,8 @@ type ClientService interface {
 	UnshareWorkflow(params *UnshareWorkflowParams, opts ...ClientOption) (*UnshareWorkflowOK, error)
 
 	UploadFile(params *UploadFileParams, opts ...ClientOption) (*UploadFileOK, error)
+
+	ValidateWorkflowSpecification(params *ValidateWorkflowSpecificationParams, opts ...ClientOption) (*ValidateWorkflowSpecificationOK, error)
 
 	SetTransport(transport runtime.ClientTransport)
 }
@@ -335,7 +352,7 @@ func (a *Client) CreateGitlabWebhook(params *CreateGitlabWebhookParams, opts ...
 /*
 CreateWorkflow creates a new workflow based on a r e a n a specification file
 
-This resource is expecting a REANA specification in JSON format with all the necessary information to instantiate a workflow.
+Creates a workflow from one uncompressed ZIP validation snapshot in the multipart “bundle“ field. The archive contains canonical “reana.yaml“ plus explicitly declared workflow/parameter files. The server loads and validates the specification authoritatively (sandboxed for Snakemake/CWL/Yadage).
 */
 func (a *Client) CreateWorkflow(params *CreateWorkflowParams, opts ...ClientOption) (*CreateWorkflowCreated, error) {
 	// NOTE: parameters are not validated before sending
@@ -347,7 +364,7 @@ func (a *Client) CreateWorkflow(params *CreateWorkflowParams, opts ...ClientOpti
 		Method:             "POST",
 		PathPattern:        "/api/workflows",
 		ProducesMediaTypes: []string{"application/json"},
-		ConsumesMediaTypes: []string{"application/json"},
+		ConsumesMediaTypes: []string{"multipart/form-data"},
 		Schemes:            []string{"http"},
 		Params:             params,
 		Reader:             &CreateWorkflowReader{formats: a.formats},
@@ -513,6 +530,51 @@ func (a *Client) DeleteSecrets(params *DeleteSecretsParams, opts ...ClientOption
 }
 
 /*
+DeleteToken revokes the active access token of the selected user
+
+This management resource revokes the currently active REANA access token of a selected user. The endpoint is disabled unless `REANA_TOKEN_MANAGEMENT_SECRET` is configured.
+*/
+func (a *Client) DeleteToken(params *DeleteTokenParams, opts ...ClientOption) (*DeleteTokenOK, error) {
+	// NOTE: parameters are not validated before sending
+	if params == nil {
+		params = NewDeleteTokenParams()
+	}
+	op := &runtime.ClientOperation{
+		ID:                 "delete_token",
+		Method:             "DELETE",
+		PathPattern:        "/api/token",
+		ProducesMediaTypes: []string{"application/json"},
+		ConsumesMediaTypes: []string{"application/json"},
+		Schemes:            []string{"http"},
+		Params:             params,
+		Reader:             &DeleteTokenReader{formats: a.formats},
+		Context:            params.Context,
+		Client:             params.HTTPClient,
+	}
+	for _, opt := range opts {
+		opt(op)
+	}
+	result, err := a.transport.Submit(op)
+	if err != nil {
+		return nil, err
+	}
+
+	// only one success response has to be checked
+	success, ok := result.(*DeleteTokenOK)
+	if ok {
+		return success, nil
+	}
+
+	// unexpected success response.
+
+	// no default response is defined.
+	//
+	// safeguard: normally, in the absence of a default response, unknown success responses return an error above: so this is a codegen issue
+	msg := fmt.Sprintf("unexpected success response for delete_token: API contract not enforced by server. Client expected to get an error, but got: %T", result)
+	panic(msg)
+}
+
+/*
 DownloadFile returns the requested file
 
 This resource is expecting a workflow UUID and a file name existing inside the workspace to return its content.
@@ -644,6 +706,51 @@ func (a *Client) GetFiles(params *GetFilesParams, opts ...ClientOption) (*GetFil
 	//
 	// safeguard: normally, in the absence of a default response, unknown success responses return an error above: so this is a codegen issue
 	msg := fmt.Sprintf("unexpected success response for get_files: API contract not enforced by server. Client expected to get an error, but got: %T", result)
+	panic(msg)
+}
+
+/*
+GetQuotaUsage gets resource quota limits
+
+This endpoint gets resource quota limits for a given user.
+*/
+func (a *Client) GetQuotaUsage(params *GetQuotaUsageParams, opts ...ClientOption) (*GetQuotaUsageOK, error) {
+	// NOTE: parameters are not validated before sending
+	if params == nil {
+		params = NewGetQuotaUsageParams()
+	}
+	op := &runtime.ClientOperation{
+		ID:                 "get_quota_usage",
+		Method:             "GET",
+		PathPattern:        "/api/quota",
+		ProducesMediaTypes: []string{"application/json"},
+		ConsumesMediaTypes: []string{"application/json"},
+		Schemes:            []string{"http"},
+		Params:             params,
+		Reader:             &GetQuotaUsageReader{formats: a.formats},
+		Context:            params.Context,
+		Client:             params.HTTPClient,
+	}
+	for _, opt := range opts {
+		opt(op)
+	}
+	result, err := a.transport.Submit(op)
+	if err != nil {
+		return nil, err
+	}
+
+	// only one success response has to be checked
+	success, ok := result.(*GetQuotaUsageOK)
+	if ok {
+		return success, nil
+	}
+
+	// unexpected success response.
+
+	// no default response is defined.
+	//
+	// safeguard: normally, in the absence of a default response, unknown success responses return an error above: so this is a codegen issue
+	msg := fmt.Sprintf("unexpected success response for get_quota_usage: API contract not enforced by server. Client expected to get an error, but got: %T", result)
 	panic(msg)
 }
 
@@ -1537,9 +1644,56 @@ func (a *Client) OpenInteractiveSession(params *OpenInteractiveSessionParams, op
 }
 
 /*
-Ping pings the server healthcheck
+PatchQuota patches periodic quota fields
 
-Ping the server.
+This endpoint sets periodic quota accounting fields for a given user.
+*/
+func (a *Client) PatchQuota(params *PatchQuotaParams, opts ...ClientOption) (*PatchQuotaOK, error) {
+	// NOTE: parameters are not validated before sending
+	if params == nil {
+		params = NewPatchQuotaParams()
+	}
+	op := &runtime.ClientOperation{
+		ID:                 "patch_quota",
+		Method:             "PATCH",
+		PathPattern:        "/api/quota",
+		ProducesMediaTypes: []string{"application/json"},
+		ConsumesMediaTypes: []string{"application/json"},
+		Schemes:            []string{"http"},
+		Params:             params,
+		Reader:             &PatchQuotaReader{formats: a.formats},
+		Context:            params.Context,
+		Client:             params.HTTPClient,
+	}
+	for _, opt := range opts {
+		opt(op)
+	}
+	result, err := a.transport.Submit(op)
+	if err != nil {
+		return nil, err
+	}
+
+	// only one success response has to be checked
+	success, ok := result.(*PatchQuotaOK)
+	if ok {
+		return success, nil
+	}
+
+	// unexpected success response.
+
+	// no default response is defined.
+	//
+	// safeguard: normally, in the absence of a default response, unknown success responses return an error above: so this is a codegen issue
+	msg := fmt.Sprintf("unexpected success response for patch_quota: API contract not enforced by server. Client expected to get an error, but got: %T", result)
+	panic(msg)
+}
+
+/*
+	Ping pings the server healthcheck
+
+	Ping the server.
+
+This endpoint is deliberately unauthenticated: it also carries the protocol bootstrap signal that a client needs *before* it authenticates or builds a request body. “api_capabilities“ advertises the client-facing protocols the server implements; a released server omits the field, which identifies it as legacy.
 */
 func (a *Client) Ping(params *PingParams, opts ...ClientOption) (*PingOK, error) {
 	// NOTE: parameters are not validated before sending
@@ -1672,6 +1826,96 @@ func (a *Client) RequestToken(params *RequestTokenParams, opts ...ClientOption) 
 }
 
 /*
+RestartWorkflow restarts a workflow with a replacement specification
+
+Atomically validates and applies one raw replacement REANA specification. Workflow source files are reused from the existing workspace.
+*/
+func (a *Client) RestartWorkflow(params *RestartWorkflowParams, opts ...ClientOption) (*RestartWorkflowOK, error) {
+	// NOTE: parameters are not validated before sending
+	if params == nil {
+		params = NewRestartWorkflowParams()
+	}
+	op := &runtime.ClientOperation{
+		ID:                 "restart_workflow",
+		Method:             "POST",
+		PathPattern:        "/api/workflows/{workflow_id_or_name}/restart",
+		ProducesMediaTypes: []string{"application/json"},
+		ConsumesMediaTypes: []string{"multipart/form-data"},
+		Schemes:            []string{"http"},
+		Params:             params,
+		Reader:             &RestartWorkflowReader{formats: a.formats},
+		Context:            params.Context,
+		Client:             params.HTTPClient,
+	}
+	for _, opt := range opts {
+		opt(op)
+	}
+	result, err := a.transport.Submit(op)
+	if err != nil {
+		return nil, err
+	}
+
+	// only one success response has to be checked
+	success, ok := result.(*RestartWorkflowOK)
+	if ok {
+		return success, nil
+	}
+
+	// unexpected success response.
+
+	// no default response is defined.
+	//
+	// safeguard: normally, in the absence of a default response, unknown success responses return an error above: so this is a codegen issue
+	msg := fmt.Sprintf("unexpected success response for restart_workflow: API contract not enforced by server. Client expected to get an error, but got: %T", result)
+	panic(msg)
+}
+
+/*
+SetQuotaLimit sets resource quota limits
+
+This endpoint sets resource quota limits for a given user.
+*/
+func (a *Client) SetQuotaLimit(params *SetQuotaLimitParams, opts ...ClientOption) (*SetQuotaLimitOK, error) {
+	// NOTE: parameters are not validated before sending
+	if params == nil {
+		params = NewSetQuotaLimitParams()
+	}
+	op := &runtime.ClientOperation{
+		ID:                 "set_quota_limit",
+		Method:             "POST",
+		PathPattern:        "/api/quota",
+		ProducesMediaTypes: []string{"application/json"},
+		ConsumesMediaTypes: []string{"application/json"},
+		Schemes:            []string{"http"},
+		Params:             params,
+		Reader:             &SetQuotaLimitReader{formats: a.formats},
+		Context:            params.Context,
+		Client:             params.HTTPClient,
+	}
+	for _, opt := range opts {
+		opt(op)
+	}
+	result, err := a.transport.Submit(op)
+	if err != nil {
+		return nil, err
+	}
+
+	// only one success response has to be checked
+	success, ok := result.(*SetQuotaLimitOK)
+	if ok {
+		return success, nil
+	}
+
+	// unexpected success response.
+
+	// no default response is defined.
+	//
+	// safeguard: normally, in the absence of a default response, unknown success responses return an error above: so this is a codegen issue
+	msg := fmt.Sprintf("unexpected success response for set_quota_limit: API contract not enforced by server. Client expected to get an error, but got: %T", result)
+	panic(msg)
+}
+
+/*
 SetWorkflowStatus sets status of a workflow
 
 This resource reports the status of a workflow. Resource is expecting a workflow UUID.
@@ -1762,9 +2006,11 @@ func (a *Client) ShareWorkflow(params *ShareWorkflowParams, opts ...ClientOption
 }
 
 /*
-StartWorkflow starts workflow
+	StartWorkflow starts workflow
 
-This resource starts the workflow execution process. Resource is expecting a workflow UUID.
+	This resource starts the workflow execution process. Resource is expecting a workflow UUID.
+
+The workspace is the authoritative copy of the specification: before the workflow is queued, the server re-loads and re-validates the specification *from the current workspace* (in a sandbox for Snakemake/CWL/Yadage, in-process for serial) and refreshes the stored specification from it. A workspace that no longer loads or fails policy is rejected with a 400 and the workflow keeps its current status. Any non-blocking validation findings are returned in “validation_warnings“.
 */
 func (a *Client) StartWorkflow(params *StartWorkflowParams, opts ...ClientOption) (*StartWorkflowOK, error) {
 	// NOTE: parameters are not validated before sending
@@ -1938,6 +2184,51 @@ func (a *Client) UploadFile(params *UploadFileParams, opts ...ClientOption) (*Up
 	//
 	// safeguard: normally, in the absence of a default response, unknown success responses return an error above: so this is a codegen issue
 	msg := fmt.Sprintf("unexpected success response for upload_file: API contract not enforced by server. Client expected to get an error, but got: %T", result)
+	panic(msg)
+}
+
+/*
+ValidateWorkflowSpecification validates a raw workflow specification bundle
+
+Accepts one uncompressed ZIP validation snapshot in the multipart “bundle“ field. The archive contains canonical “reana.yaml“ plus its explicitly declared workflow/configuration files. Serial specs are loaded and validated in-process; Snakemake/CWL/Yadage specs -- whose loading executes user code -- are validated inside a sandboxed job spawned by reana-workflow-controller. Returns a structured validation report.
+*/
+func (a *Client) ValidateWorkflowSpecification(params *ValidateWorkflowSpecificationParams, opts ...ClientOption) (*ValidateWorkflowSpecificationOK, error) {
+	// NOTE: parameters are not validated before sending
+	if params == nil {
+		params = NewValidateWorkflowSpecificationParams()
+	}
+	op := &runtime.ClientOperation{
+		ID:                 "validate_workflow_specification",
+		Method:             "POST",
+		PathPattern:        "/api/workflows/validate",
+		ProducesMediaTypes: []string{"application/json"},
+		ConsumesMediaTypes: []string{"multipart/form-data"},
+		Schemes:            []string{"http"},
+		Params:             params,
+		Reader:             &ValidateWorkflowSpecificationReader{formats: a.formats},
+		Context:            params.Context,
+		Client:             params.HTTPClient,
+	}
+	for _, opt := range opts {
+		opt(op)
+	}
+	result, err := a.transport.Submit(op)
+	if err != nil {
+		return nil, err
+	}
+
+	// only one success response has to be checked
+	success, ok := result.(*ValidateWorkflowSpecificationOK)
+	if ok {
+		return success, nil
+	}
+
+	// unexpected success response.
+
+	// no default response is defined.
+	//
+	// safeguard: normally, in the absence of a default response, unknown success responses return an error above: so this is a codegen issue
+	msg := fmt.Sprintf("unexpected success response for validate_workflow_specification: API contract not enforced by server. Client expected to get an error, but got: %T", result)
 	panic(msg)
 }
 

@@ -13,6 +13,7 @@ import (
 	"io"
 	"reanahub/reana-client-go/client"
 	"reanahub/reana-client-go/client/operations"
+	"reanahub/reana-client-go/models"
 	"reanahub/reana-client-go/pkg/config"
 	"reanahub/reana-client-go/pkg/displayer"
 	"reanahub/reana-client-go/pkg/validator"
@@ -110,7 +111,7 @@ E.g. --debug (workflow engine - cwl)`,
 }
 
 func (o *startOptions) run(cmd *cobra.Command) error {
-	api, err := client.ApiClient()
+	api, err := client.ControlAPIClient()
 	if err != nil {
 		return err
 	}
@@ -126,7 +127,9 @@ func (o *startOptions) run(cmd *cobra.Command) error {
 		}
 	}
 
-	startParams := operations.NewStartWorkflowParams()
+	startParams := operations.NewStartWorkflowParamsWithTimeout(
+		controlOperationTimeout,
+	)
 	startParams.SetAccessToken(&o.token)
 	startParams.SetWorkflowIDOrName(o.workflow)
 	startParams.SetParameters(operations.StartWorkflowBody{
@@ -137,6 +140,10 @@ func (o *startOptions) run(cmd *cobra.Command) error {
 	if err != nil {
 		return err
 	}
+	displayStartValidationWarnings(
+		startResp.Payload.ValidationWarnings,
+		cmd.OutOrStdout(),
+	)
 
 	currentStatus := startResp.Payload.Status
 	statusMsg, err := workflows.StatusChangeMessage(o.workflow, currentStatus)
@@ -173,6 +180,23 @@ func (o *startOptions) run(cmd *cobra.Command) error {
 	return nil
 }
 
+func displayStartValidationWarnings(
+	warnings []*models.WorkflowSubmissionResponseValidationWarningsItems0,
+	out io.Writer,
+) {
+	for _, warning := range warnings {
+		if warning == nil {
+			continue
+		}
+		displayer.DisplayMessage(
+			warning.Message,
+			displayer.Warning,
+			true,
+			out,
+		)
+	}
+}
+
 // validateStartOptionsAndParams gets the workflow parameters from the server and validates the options and params provided.
 // For operations options, it returns an error if any of them aren't valid. Translated options if necessary.
 // For input parameters, simply displays errors if any and continues execution.
@@ -190,8 +214,25 @@ func validateStartOptionsAndParams(
 		return nil, nil, err
 	}
 
-	validatedOptions, err = validator.ValidateOperationalOptions(
+	return validateOptionsAndParams(
 		paramsResp.Payload.Type,
+		paramsResp.Payload.Parameters,
+		options,
+		inputParams,
+		out,
+	)
+}
+
+// validateOptionsAndParams validates execution overrides against a supplied
+// workflow specification context.
+func validateOptionsAndParams(
+	workflowType string,
+	originalParams map[string]any,
+	options, inputParams map[string]string,
+	out io.Writer,
+) (validatedOptions map[string]string, validatedParams map[string]string, err error) {
+	validatedOptions, err = validator.ValidateOperationalOptions(
+		workflowType,
 		options,
 	)
 	if err != nil {
@@ -200,7 +241,7 @@ func validateStartOptionsAndParams(
 
 	validatedParams, errorList := validator.ValidateInputParameters(
 		inputParams,
-		paramsResp.Payload.Parameters,
+		originalParams,
 	)
 	for _, err := range errorList {
 		displayer.DisplayMessage(err.Error(), displayer.Error, false, out)

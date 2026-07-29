@@ -11,12 +11,42 @@ package cmd
 import (
 	"fmt"
 	"net/http"
+	"net/http/httptest"
 	"reanahub/reana-client-go/pkg/config"
+	"strings"
 	"testing"
+
+	"github.com/spf13/viper"
 )
 
 var startPathTemplate = "/api/workflows/%s/start"
 var paramsPathTemplate = "/api/workflows/%s/parameters"
+
+func TestStartRendersValidationWarnings(t *testing.T) {
+	server := httptest.NewTLSServer(
+		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(
+				`{"message":"started","status":"running","user":"u",` +
+					`"workflow_id":"id","workflow_name":"my_workflow",` +
+					`"validation_warnings":[{"message":"using latest tag"}]}`,
+			))
+		}),
+	)
+	defer server.Close()
+	viper.Set("server-url", server.URL)
+	t.Cleanup(viper.Reset)
+
+	out, err := ExecuteCommand(
+		NewRootCmd(), "start", "-t", "1234", "-w", "my_workflow",
+	)
+	if err != nil {
+		t.Fatalf("start failed: %v", err)
+	}
+	if !strings.Contains(out, "using latest tag") {
+		t.Errorf("expected validation warning in output, got %q", out)
+	}
+}
 
 func TestStart(t *testing.T) {
 	// Deactivate the sleep used with the --follow flag

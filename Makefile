@@ -4,7 +4,19 @@
 # REANA is free software; you can redistribute it and/or modify it
 # under the terms of the MIT License; see LICENSE file for more details.
 
-SWAGGER := docker run --rm -it -e GOPATH=$(shell go env GOPATH):/go -v $(HOME):$(HOME) -w $(shell pwd) --pull always quay.io/goswagger/swagger
+# Allocate a TTY only when stdin is one, so the target also runs unattended
+# (CI, scripts); `docker run -t` fails outright without a terminal.
+DOCKER_TTY := $(shell [ -t 0 ] && echo -t)
+
+# Keep this pin in step with the committed client/ tree: the generator's output
+# changes between releases (v0.32.3 emits `interface{}` and `err != io.EOF`,
+# v0.33.2+ drops the per-file header, v0.36+ splits the go-openapi/swag import),
+# so regenerating with the wrong one rewrites every file for no reason.
+SWAGGER := docker run --rm -i $(DOCKER_TTY) --user $(shell id -u):$(shell id -g) \
+	-e HOME=/tmp -e GOPATH=/tmp/go \
+	-e PATH=/usr/local/go/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
+	-v $(shell go env GOROOT):/usr/local/go:ro -v $(HOME):$(HOME) \
+	-w $(shell pwd) --pull always quay.io/goswagger/swagger:v0.33.1
 
 all: help
 
@@ -41,7 +53,7 @@ swagger-validate-specs: # Validate OpenAPI specification.
 	$(SWAGGER) validate "../reana-server/docs/openapi.json"
 
 test: # Run test suite.
-	go test -coverprofile coverage.txt ./cmd/... ./pkg/...
+	go test -coverprofile coverage.txt ./client ./cmd/... ./pkg/...
 
 tidy: # Format code and tidy go.mod.
 	go install github.com/segmentio/golines@latest

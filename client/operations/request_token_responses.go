@@ -16,6 +16,7 @@ import (
 	"github.com/go-openapi/runtime"
 	"github.com/go-openapi/strfmt"
 	"github.com/go-openapi/swag"
+	"github.com/go-openapi/validate"
 )
 
 // RequestTokenReader is a Reader for the RequestToken structure.
@@ -40,6 +41,12 @@ func (o *RequestTokenReader) ReadResponse(response runtime.ClientResponse, consu
 		return nil, result
 	case 403:
 		result := NewRequestTokenForbidden()
+		if err := result.readResponse(response, consumer, o.formats); err != nil {
+			return nil, err
+		}
+		return nil, result
+	case 429:
+		result := NewRequestTokenTooManyRequests()
 		if err := result.readResponse(response, consumer, o.formats); err != nil {
 			return nil, err
 		}
@@ -256,6 +263,76 @@ func (o *RequestTokenForbidden) GetPayload() *RequestTokenForbiddenBody {
 func (o *RequestTokenForbidden) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
 	o.Payload = new(RequestTokenForbiddenBody)
+
+	// response payload
+	if err := consumer.Consume(response.Body(), o.Payload); err != nil && !stderrors.Is(err, io.EOF) {
+		return err
+	}
+
+	return nil
+}
+
+// NewRequestTokenTooManyRequests creates a RequestTokenTooManyRequests with default headers values
+func NewRequestTokenTooManyRequests() *RequestTokenTooManyRequests {
+	return &RequestTokenTooManyRequests{}
+}
+
+/*
+RequestTokenTooManyRequests describes a response with status code 429, with default header values.
+
+Request rate limit exceeded.
+*/
+type RequestTokenTooManyRequests struct {
+	Payload *RequestTokenTooManyRequestsBody
+}
+
+// IsSuccess returns true when this request token too many requests response has a 2xx status code
+func (o *RequestTokenTooManyRequests) IsSuccess() bool {
+	return false
+}
+
+// IsRedirect returns true when this request token too many requests response has a 3xx status code
+func (o *RequestTokenTooManyRequests) IsRedirect() bool {
+	return false
+}
+
+// IsClientError returns true when this request token too many requests response has a 4xx status code
+func (o *RequestTokenTooManyRequests) IsClientError() bool {
+	return true
+}
+
+// IsServerError returns true when this request token too many requests response has a 5xx status code
+func (o *RequestTokenTooManyRequests) IsServerError() bool {
+	return false
+}
+
+// IsCode returns true when this request token too many requests response a status code equal to that given
+func (o *RequestTokenTooManyRequests) IsCode(code int) bool {
+	return code == 429
+}
+
+// Code gets the status code for the request token too many requests response
+func (o *RequestTokenTooManyRequests) Code() int {
+	return 429
+}
+
+func (o *RequestTokenTooManyRequests) Error() string {
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[PUT /api/token][%d] requestTokenTooManyRequests %s", 429, payload)
+}
+
+func (o *RequestTokenTooManyRequests) String() string {
+	payload, _ := json.Marshal(o.Payload)
+	return fmt.Sprintf("[PUT /api/token][%d] requestTokenTooManyRequests %s", 429, payload)
+}
+
+func (o *RequestTokenTooManyRequests) GetPayload() *RequestTokenTooManyRequestsBody {
+	return o.Payload
+}
+
+func (o *RequestTokenTooManyRequests) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
+
+	o.Payload = new(RequestTokenTooManyRequestsBody)
 
 	// response payload
 	if err := consumer.Consume(response.Body(), o.Payload); err != nil && !stderrors.Is(err, io.EOF) {
@@ -549,6 +626,63 @@ func (o *RequestTokenOKBodyReanaToken) MarshalBinary() ([]byte, error) {
 // UnmarshalBinary interface implementation
 func (o *RequestTokenOKBodyReanaToken) UnmarshalBinary(b []byte) error {
 	var res RequestTokenOKBodyReanaToken
+	if err := swag.ReadJSON(b, &res); err != nil {
+		return err
+	}
+	*o = res
+	return nil
+}
+
+/*
+RequestTokenTooManyRequestsBody request token too many requests body
+swagger:model RequestTokenTooManyRequestsBody
+*/
+type RequestTokenTooManyRequestsBody struct {
+
+	// message
+	// Required: true
+	Message *string `json:"message"`
+}
+
+// Validate validates this request token too many requests body
+func (o *RequestTokenTooManyRequestsBody) Validate(formats strfmt.Registry) error {
+	var res []error
+
+	if err := o.validateMessage(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if len(res) > 0 {
+		return errors.CompositeValidationError(res...)
+	}
+	return nil
+}
+
+func (o *RequestTokenTooManyRequestsBody) validateMessage(formats strfmt.Registry) error {
+
+	if err := validate.Required("requestTokenTooManyRequests"+"."+"message", "body", o.Message); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// ContextValidate validates this request token too many requests body based on context it is used
+func (o *RequestTokenTooManyRequestsBody) ContextValidate(ctx context.Context, formats strfmt.Registry) error {
+	return nil
+}
+
+// MarshalBinary interface implementation
+func (o *RequestTokenTooManyRequestsBody) MarshalBinary() ([]byte, error) {
+	if o == nil {
+		return nil, nil
+	}
+	return swag.WriteJSON(o)
+}
+
+// UnmarshalBinary interface implementation
+func (o *RequestTokenTooManyRequestsBody) UnmarshalBinary(b []byte) error {
+	var res RequestTokenTooManyRequestsBody
 	if err := swag.ReadJSON(b, &res); err != nil {
 		return err
 	}
