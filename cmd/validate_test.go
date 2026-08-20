@@ -24,15 +24,21 @@ import (
 	"github.com/spf13/viper"
 )
 
-// writeSerialSpec writes a minimal serial reana.yaml and returns its path.
-func writeSerialSpec(t *testing.T) string {
+// writeSpec writes the given reana.yaml body and returns its path.
+func writeSpec(t *testing.T, body string) string {
 	t.Helper()
 	dir := t.TempDir()
 	path := filepath.Join(dir, "reana.yaml")
-	if err := os.WriteFile(path, []byte("workflow:\n  type: serial\n"), 0o644); err != nil {
+	if err := os.WriteFile(path, []byte(body), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	return path
+}
+
+// writeSerialSpec writes a minimal serial reana.yaml and returns its path.
+func writeSerialSpec(t *testing.T) string {
+	t.Helper()
+	return writeSpec(t, "workflow:\n  type: serial\n")
 }
 
 func TestValidateKeepsPullLocal(t *testing.T) {

@@ -103,7 +103,11 @@ func (o *downloadOptions) run(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			return err
 		}
-		if outputs := spec.Specification.Outputs; outputs != nil {
+		specification, err := workflowSpecification(spec)
+		if err != nil {
+			return err
+		}
+		if outputs := specification.Outputs; outputs != nil {
 			downloadPaths = append(downloadPaths, outputs.Files...)
 			downloadPaths = append(downloadPaths, outputs.Directories...)
 		}

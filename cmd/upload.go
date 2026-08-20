@@ -91,8 +91,10 @@ func (o *uploadOptions) run(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			return err
 		}
-		inputFiles := spec.Specification.Inputs.Files
-		inputDirs := spec.Specification.Inputs.Directories
+		inputFiles, inputDirs, err := workflowInputs(spec)
+		if err != nil {
+			return err
+		}
 		if err := o.validateInputs(inputFiles, inputDirs); err != nil {
 			return err
 		}

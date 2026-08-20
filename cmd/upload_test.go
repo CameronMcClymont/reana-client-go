@@ -25,6 +25,7 @@ import (
 )
 
 var uploadServerPath = "/api/workflows/%s/workspace"
+var uploadWorkflowSpecServerPath = "/api/workflows/%s/specification"
 
 func TestFileUpload(t *testing.T) {
 	testFile := t.TempDir() + "/test.txt"
@@ -44,6 +45,19 @@ func TestFileUpload(t *testing.T) {
 			args: []string{"-w", "my_workflow", testFile},
 			expected: []string{
 				"test.txt was successfully uploaded.",
+			},
+		},
+		"upload from response without specification": {
+			serverResponses: map[string]ServerResponse{
+				fmt.Sprintf(uploadWorkflowSpecServerPath, "my_workflow"): {
+					statusCode:   http.StatusOK,
+					responseFile: "common_empty.json",
+				},
+			},
+			args:      []string{"-w", "my_workflow"},
+			wantError: true,
+			expected: []string{
+				"workflow specification response is missing specification",
 			},
 		},
 		"unexisting file": {

@@ -70,6 +70,19 @@ func TestFileDownload(t *testing.T) {
 			},
 			args: []string{"-w", "my_workflow"},
 		},
+		"download from response without specification": {
+			serverResponses: map[string]ServerResponse{
+				fmt.Sprintf(downloadWorkflowSpecServerPath, "my_workflow"): {
+					statusCode:   http.StatusOK,
+					responseFile: "common_empty.json",
+				},
+			},
+			args:      []string{"-w", "my_workflow"},
+			wantError: true,
+			expected: []string{
+				"workflow specification response is missing specification",
+			},
+		},
 		"download file specified as argument": {
 			serverResponses: map[string]ServerResponse{
 				fmt.Sprintf(downloadServerPath, "my_workflow", fileName): {
