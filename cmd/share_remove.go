@@ -15,6 +15,7 @@ import (
 	"reanahub/reana-client-go/pkg/config"
 	"reanahub/reana-client-go/pkg/displayer"
 	"reanahub/reana-client-go/pkg/errorhandler"
+	"reanahub/reana-client-go/pkg/validator"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
@@ -23,7 +24,7 @@ import (
 
 const shareRemoveDesc = `Unshare a workflow.
 
-The ` + `share-remove` + ` command allows for unsharing a workflow. The workflow
+The ` + "`share-remove`" + ` command allows for unsharing a workflow. The workflow
 will no longer be visible to the users with whom it was shared.
 
 Example:
@@ -32,9 +33,16 @@ Example:
 `
 
 type shareRemoveOptions struct {
-	token    string
-	workflow string
-	users    []string
+	token      string
+	workflow   string
+	users      []string
+	jsonOutput bool
+}
+
+type shareRemoveResult struct {
+	Workflow     string   `json:"workflow"`
+	UnsharedWith []string `json:"unshared_with"`
+	Errors       []string `json:"errors"`
 }
 
 // newShareRemoveCmd creates a command to unshare a workflow.
@@ -47,6 +55,11 @@ func newShareRemoveCmd() *cobra.Command {
 		Long:  shareRemoveDesc,
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if err := validator.ValidateAtLeastOne(
+				cmd.Flags(), []string{"user"},
+			); err != nil {
+				return fmt.Errorf("%s\n%s", err.Error(), cmd.UsageString())
+			}
 			return o.run(cmd)
 		},
 	}
@@ -74,6 +87,7 @@ func newShareRemoveCmd() *cobra.Command {
 		[]string{},
 		`Users to unshare the workflow with.`,
 	)
+	f.BoolVar(&o.jsonOutput, "json", false, "Get output in JSON format.")
 	// Remove -h shorthand
 	cmd.PersistentFlags().BoolP("help", "h", false, "Help for share-remove")
 
@@ -90,8 +104,8 @@ func (o *shareRemoveOptions) run(cmd *cobra.Command) error {
 		return err
 	}
 
-	shareErrors := []string{}
-	sharedUsers := []string{}
+	unshareErrors := []string{}
+	unsharedUsers := []string{}
 
 	for _, user := range o.users {
 		log.Infof("Unsharing workflow %s with user %s", o.workflow, user)
@@ -101,8 +115,8 @@ func (o *shareRemoveOptions) run(cmd *cobra.Command) error {
 
 		if err != nil {
 			err := errorhandler.HandleApiError(err)
-			shareErrors = append(
-				shareErrors,
+			unshareErrors = append(
+				unshareErrors,
 				fmt.Sprintf(
 					"Failed to unshare %s with %s: %s",
 					o.workflow,
@@ -111,31 +125,44 @@ func (o *shareRemoveOptions) run(cmd *cobra.Command) error {
 				),
 			)
 		} else {
-			sharedUsers = append(sharedUsers, user)
+			unsharedUsers = append(unsharedUsers, user)
 		}
 	}
 
-	if len(sharedUsers) > 0 {
-		displayer.DisplayMessage(
-			fmt.Sprintf(
-				"%s is no longer shared with %s",
-				o.workflow,
-				strings.Join(sharedUsers, ", "),
-			),
-			displayer.Success,
-			false,
+	if o.jsonOutput {
+		if err := displayer.DisplayJsonOutput(
+			shareRemoveResult{
+				Workflow:     o.workflow,
+				UnsharedWith: unsharedUsers,
+				Errors:       unshareErrors,
+			},
 			cmd.OutOrStdout(),
-		)
-	}
-	if len(shareErrors) > 0 {
-		for _, err := range shareErrors {
+		); err != nil {
+			return err
+		}
+	} else {
+		if len(unsharedUsers) > 0 {
 			displayer.DisplayMessage(
-				err,
+				fmt.Sprintf(
+					"%s is no longer shared with %s",
+					o.workflow,
+					strings.Join(unsharedUsers, ", "),
+				),
+				displayer.Success,
+				false,
+				cmd.OutOrStdout(),
+			)
+		}
+		for _, unshareError := range unshareErrors {
+			displayer.DisplayMessage(
+				unshareError,
 				displayer.Error,
 				false,
 				cmd.OutOrStdout(),
 			)
 		}
+	}
+	if len(unshareErrors) > 0 {
 		return config.ErrEmpty
 	}
 

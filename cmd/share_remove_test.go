@@ -30,6 +30,30 @@ func TestShareRemove(t *testing.T) {
 				"my_workflow is no longer shared with bob@cern.ch",
 			},
 		},
+		"json": {
+			serverResponses: map[string]ServerResponse{
+				fmt.Sprintf(shareRemovePathTemplate, workflowName): {
+					statusCode: http.StatusOK,
+				},
+			},
+			args: []string{
+				"-w", workflowName, "--user", "bob@cern.ch", "--json",
+			},
+			expected: []string{
+				`"workflow": "my_workflow"`,
+				`"unshared_with": [`,
+				`"bob@cern.ch"`,
+				`"errors": []`,
+			},
+			unwanted: []string{"SUCCESS"},
+		},
+		"missing user": {
+			args: []string{"-w", workflowName},
+			expected: []string{
+				"at least one of the options: 'user' is required",
+			},
+			wantError: true,
+		},
 		"invalid workflow": {
 			serverResponses: map[string]ServerResponse{
 				fmt.Sprintf(shareRemovePathTemplate, "invalid"): {
@@ -44,6 +68,27 @@ func TestShareRemove(t *testing.T) {
 			expected: []string{
 				"REANA_WORKON is set to invalid, but that workflow does not exist.",
 			},
+			wantError: true,
+		},
+		"invalid workflow json": {
+			serverResponses: map[string]ServerResponse{
+				fmt.Sprintf(shareRemovePathTemplate, "invalid"): {
+					statusCode:   http.StatusNotFound,
+					responseFile: "common_invalid_workflow.json",
+				},
+			},
+			args: []string{
+				"-w", "invalid",
+				"--user", "bob@cern.ch",
+				"--json",
+			},
+			expected: []string{
+				`"workflow": "invalid"`,
+				`"unshared_with": []`,
+				`"errors": [`,
+				"REANA_WORKON is set to invalid, but that workflow does not exist.",
+			},
+			unwanted:  []string{"ERROR:"},
 			wantError: true,
 		},
 	}

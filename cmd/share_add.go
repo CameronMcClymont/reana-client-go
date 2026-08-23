@@ -17,6 +17,7 @@ import (
 	"reanahub/reana-client-go/pkg/errorhandler"
 	"reanahub/reana-client-go/pkg/validator"
 	"strings"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -33,7 +34,7 @@ Examples:
 
   $ reana-client share-add -w myanalysis.42 --user bob@cern.ch
   --user cecile@cern.ch --message "Please review my analysis"
-  --valid-until 2024-12-31
+  --valid-until 2099-12-31
 `
 
 type shareAddOptions struct {
@@ -42,6 +43,13 @@ type shareAddOptions struct {
 	users      []string
 	message    string
 	validUntil string
+	jsonOutput bool
+}
+
+type shareAddResult struct {
+	Workflow   string   `json:"workflow"`
+	SharedWith []string `json:"shared_with"`
+	Errors     []string `json:"errors"`
 }
 
 // newShareAddCmd creates a command to share a workflow with other users.
@@ -58,6 +66,9 @@ func newShareAddCmd() *cobra.Command {
 				cmd.Flags(), []string{"user"},
 			); err != nil {
 				return fmt.Errorf("%s\n%s", err.Error(), cmd.UsageString())
+			}
+			if err := validateShareExpiry(o.validUntil); err != nil {
+				return err
 			}
 			return o.run(cmd)
 		},
@@ -101,10 +112,24 @@ func newShareAddCmd() *cobra.Command {
 	workflow will expire for the given
 	user(s) (format: YYYY-MM-DD).`,
 	)
+	f.BoolVar(&o.jsonOutput, "json", false, "Get output in JSON format.")
 	// Remove -h shorthand
 	cmd.PersistentFlags().BoolP("help", "h", false, "Help for share-add")
 
 	return cmd
+}
+
+func validateShareExpiry(value string) error {
+	if value == "" {
+		return nil
+	}
+	if _, err := time.Parse(time.DateOnly, value); err != nil {
+		return fmt.Errorf(
+			"invalid value for 'valid-until': '%s' does not match the format 'YYYY-MM-DD'",
+			value,
+		)
+	}
+	return nil
 }
 
 func (o *shareAddOptions) run(cmd *cobra.Command) error {
@@ -146,28 +171,40 @@ func (o *shareAddOptions) run(cmd *cobra.Command) error {
 		}
 	}
 
-	if len(sharedUsers) > 0 {
-		displayer.DisplayMessage(
-			fmt.Sprintf(
-				"%s is now read-only shared with %s",
-				o.workflow,
-				strings.Join(sharedUsers, ", "),
-			),
-			displayer.Success,
-			false,
+	if o.jsonOutput {
+		if err := displayer.DisplayJsonOutput(
+			shareAddResult{
+				Workflow:   o.workflow,
+				SharedWith: sharedUsers,
+				Errors:     shareErrors,
+			},
 			cmd.OutOrStdout(),
-		)
-	}
-	if len(shareErrors) > 0 {
-		for _, err := range shareErrors {
+		); err != nil {
+			return err
+		}
+	} else {
+		if len(sharedUsers) > 0 {
 			displayer.DisplayMessage(
-				err,
+				fmt.Sprintf(
+					"%s is now read-only shared with %s",
+					o.workflow,
+					strings.Join(sharedUsers, ", "),
+				),
+				displayer.Success,
+				false,
+				cmd.OutOrStdout(),
+			)
+		}
+		for _, shareError := range shareErrors {
+			displayer.DisplayMessage(
+				shareError,
 				displayer.Error,
 				false,
 				cmd.OutOrStdout(),
 			)
 		}
-
+	}
+	if len(shareErrors) > 0 {
 		return config.ErrEmpty
 	}
 
