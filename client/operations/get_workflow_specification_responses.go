@@ -568,6 +568,9 @@ type GetWorkflowSpecificationOKBodySpecification struct {
 	// outputs
 	Outputs *GetWorkflowSpecificationOKBodySpecificationOutputs `json:"outputs,omitempty"`
 
+	// tests
+	Tests *GetWorkflowSpecificationOKBodySpecificationTests `json:"tests,omitempty"`
+
 	// version
 	Version string `json:"version,omitempty"`
 
@@ -584,6 +587,10 @@ func (o *GetWorkflowSpecificationOKBodySpecification) Validate(formats strfmt.Re
 	}
 
 	if err := o.validateOutputs(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if err := o.validateTests(formats); err != nil {
 		res = append(res, err)
 	}
 
@@ -643,6 +650,29 @@ func (o *GetWorkflowSpecificationOKBodySpecification) validateOutputs(formats st
 	return nil
 }
 
+func (o *GetWorkflowSpecificationOKBodySpecification) validateTests(formats strfmt.Registry) error {
+	if swag.IsZero(o.Tests) { // not required
+		return nil
+	}
+
+	if o.Tests != nil {
+		if err := o.Tests.Validate(formats); err != nil {
+			ve := new(errors.Validation)
+			if stderrors.As(err, &ve) {
+				return ve.ValidateName("getWorkflowSpecificationOK" + "." + "specification" + "." + "tests")
+			}
+			ce := new(errors.CompositeError)
+			if stderrors.As(err, &ce) {
+				return ce.ValidateName("getWorkflowSpecificationOK" + "." + "specification" + "." + "tests")
+			}
+
+			return err
+		}
+	}
+
+	return nil
+}
+
 func (o *GetWorkflowSpecificationOKBodySpecification) validateWorkflow(formats strfmt.Registry) error {
 	if swag.IsZero(o.Workflow) { // not required
 		return nil
@@ -675,6 +705,10 @@ func (o *GetWorkflowSpecificationOKBodySpecification) ContextValidate(ctx contex
 	}
 
 	if err := o.contextValidateOutputs(ctx, formats); err != nil {
+		res = append(res, err)
+	}
+
+	if err := o.contextValidateTests(ctx, formats); err != nil {
 		res = append(res, err)
 	}
 
@@ -729,6 +763,31 @@ func (o *GetWorkflowSpecificationOKBodySpecification) contextValidateOutputs(ctx
 			ce := new(errors.CompositeError)
 			if stderrors.As(err, &ce) {
 				return ce.ValidateName("getWorkflowSpecificationOK" + "." + "specification" + "." + "outputs")
+			}
+
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (o *GetWorkflowSpecificationOKBodySpecification) contextValidateTests(ctx context.Context, formats strfmt.Registry) error {
+
+	if o.Tests != nil {
+
+		if swag.IsZero(o.Tests) { // not required
+			return nil
+		}
+
+		if err := o.Tests.ContextValidate(ctx, formats); err != nil {
+			ve := new(errors.Validation)
+			if stderrors.As(err, &ve) {
+				return ve.ValidateName("getWorkflowSpecificationOK" + "." + "specification" + "." + "tests")
+			}
+			ce := new(errors.CompositeError)
+			if stderrors.As(err, &ce) {
+				return ce.ValidateName("getWorkflowSpecificationOK" + "." + "specification" + "." + "tests")
 			}
 
 			return err
@@ -862,6 +921,44 @@ func (o *GetWorkflowSpecificationOKBodySpecificationOutputs) MarshalBinary() ([]
 // UnmarshalBinary interface implementation
 func (o *GetWorkflowSpecificationOKBodySpecificationOutputs) UnmarshalBinary(b []byte) error {
 	var res GetWorkflowSpecificationOKBodySpecificationOutputs
+	if err := swag.ReadJSON(b, &res); err != nil {
+		return err
+	}
+	*o = res
+	return nil
+}
+
+/*
+GetWorkflowSpecificationOKBodySpecificationTests get workflow specification o k body specification tests
+swagger:model GetWorkflowSpecificationOKBodySpecificationTests
+*/
+type GetWorkflowSpecificationOKBodySpecificationTests struct {
+
+	// files
+	Files []string `json:"files"`
+}
+
+// Validate validates this get workflow specification o k body specification tests
+func (o *GetWorkflowSpecificationOKBodySpecificationTests) Validate(formats strfmt.Registry) error {
+	return nil
+}
+
+// ContextValidate validates this get workflow specification o k body specification tests based on context it is used
+func (o *GetWorkflowSpecificationOKBodySpecificationTests) ContextValidate(ctx context.Context, formats strfmt.Registry) error {
+	return nil
+}
+
+// MarshalBinary interface implementation
+func (o *GetWorkflowSpecificationOKBodySpecificationTests) MarshalBinary() ([]byte, error) {
+	if o == nil {
+		return nil, nil
+	}
+	return swag.WriteJSON(o)
+}
+
+// UnmarshalBinary interface implementation
+func (o *GetWorkflowSpecificationOKBodySpecificationTests) UnmarshalBinary(b []byte) error {
+	var res GetWorkflowSpecificationOKBodySpecificationTests
 	if err := swag.ReadJSON(b, &res); err != nil {
 		return err
 	}

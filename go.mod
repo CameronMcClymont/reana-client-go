@@ -3,6 +3,8 @@ module reanahub/reana-client-go
 go 1.25.13
 
 require (
+	github.com/cucumber/gherkin/go/v42 v42.0.0
+	github.com/cucumber/messages/go/v34 v34.2.1
 	github.com/go-gota/gota v0.12.0
 	github.com/go-openapi/errors v0.22.8
 	github.com/go-openapi/runtime v0.32.6

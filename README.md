@@ -14,6 +14,7 @@ workflows.
 
 - seed workspace with input code and data
 - run computational workflows on remote compute clouds
+- test completed workflow runs using Gherkin feature files
 - list submitted workflows and enquire about their statuses
 - download results of finished workflows
 
@@ -21,6 +22,24 @@ workflows.
 
 The detailed information on how to install and use REANA can be found in
 [docs.reana.io](https://docs.reana.io).
+
+### Testing completed workflows
+
+Use `test` to evaluate a finished workflow run against Gherkin feature files:
+
+```console
+$ reana-client-go test -w myanalysis.1
+```
+
+By default, the command reads feature file paths from `tests.files` in the
+stored `reana.yaml` specification and opens those paths from the current local
+project. Repeat `-n/--test-files` to override the specification:
+
+```console
+$ reana-client-go test -w myanalysis.1 \
+    -n tests/log-messages.feature \
+    -n tests/workspace-files.feature
+```
 
 ### Bundling additional workflow source files
 

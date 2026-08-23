@@ -1,5 +1,5 @@
 # This file is part of REANA.
-# Copyright (C) 2025 CERN.
+# Copyright (C) 2025, 2026 CERN.
 #
 # REANA is free software; you can redistribute it and/or modify it
 # under the terms of the MIT License; see LICENSE file for more details.
@@ -1737,6 +1737,49 @@ _reana-client-go_stop()
     noun_aliases=()
 }
 
+_reana-client-go_test()
+{
+    last_command="reana-client-go_test"
+
+    command_aliases=()
+
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+    flags+=("--access-token=")
+    two_word_flags+=("--access-token")
+    two_word_flags+=("-t")
+    local_nonpersistent_flags+=("--access-token")
+    local_nonpersistent_flags+=("--access-token=")
+    local_nonpersistent_flags+=("-t")
+    flags+=("--test-files=")
+    two_word_flags+=("--test-files")
+    two_word_flags+=("-n")
+    local_nonpersistent_flags+=("--test-files")
+    local_nonpersistent_flags+=("--test-files=")
+    local_nonpersistent_flags+=("-n")
+    flags+=("--workflow=")
+    two_word_flags+=("--workflow")
+    two_word_flags+=("-w")
+    local_nonpersistent_flags+=("--workflow")
+    local_nonpersistent_flags+=("--workflow=")
+    local_nonpersistent_flags+=("-w")
+    flags+=("--loglevel=")
+    two_word_flags+=("--loglevel")
+    two_word_flags+=("-l")
+    flags+=("--profile=")
+    two_word_flags+=("--profile")
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
 _reana-client-go_upload()
 {
     last_command="reana-client-go_upload"
@@ -1879,6 +1922,7 @@ _reana-client-go_root_command()
     commands+=("start")
     commands+=("status")
     commands+=("stop")
+    commands+=("test")
     commands+=("upload")
     commands+=("validate")
     commands+=("version")

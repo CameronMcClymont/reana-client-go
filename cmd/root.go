@@ -93,6 +93,12 @@ func NewRootCmd() *cobra.Command {
 			},
 		},
 		{
+			Message: "Workflow run test commands:",
+			Commands: []*cobra.Command{
+				newTestCmd(),
+			},
+		},
+		{
 			Message: "Workflow sharing commands:",
 			Commands: []*cobra.Command{
 				newShareAddCmd(),
