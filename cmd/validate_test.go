@@ -462,7 +462,7 @@ printf '%%s\n' "$*" >> %q
 if [ "$1" = "run" ]; then sleep 2; fi
 `, logPath))
 	originalTimeout := localImageCheckTimeout
-	localImageCheckTimeout = 20 * time.Millisecond
+	localImageCheckTimeout = time.Second
 	defer func() { localImageCheckTimeout = originalTimeout }()
 
 	if _, _, err := imageUIDGIDs(cli, "example/image:latest"); err == nil {
