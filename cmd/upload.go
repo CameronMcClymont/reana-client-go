@@ -12,7 +12,9 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"reanahub/reana-client-go/pkg/config"
 	"reanahub/reana-client-go/pkg/displayer"
+	"reanahub/reana-client-go/pkg/errorhandler"
 	"reanahub/reana-client-go/pkg/workflows"
 	"strings"
 
@@ -102,10 +104,22 @@ func (o *uploadOptions) run(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	uploadFailed := false
 	for _, file := range files {
 		_, err := workflows.UploadFile(o.token, o.workflow, file)
 		if err != nil {
-			return err
+			uploadFailed = true
+			displayer.DisplayMessage(
+				fmt.Sprintf(
+					"Something went wrong while uploading %s:\n%s",
+					file,
+					errorhandler.HandleApiError(err),
+				),
+				displayer.Error,
+				false,
+				cmd.OutOrStdout(),
+			)
+			continue
 		}
 		displayer.DisplayMessage(
 			fmt.Sprintf("File %s was successfully uploaded.", file),
@@ -113,6 +127,9 @@ func (o *uploadOptions) run(cmd *cobra.Command, args []string) error {
 			false,
 			cmd.OutOrStdout(),
 		)
+	}
+	if uploadFailed {
+		return config.ErrEmpty
 	}
 	return nil
 }
