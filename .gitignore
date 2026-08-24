@@ -5,6 +5,9 @@
 *.so
 *.dylib
 /reana-client-go
+/reana-client-go-v*-darwin-*
+/reana-client-go-v*-linux-*
+/checksums.txt
 
 # Test binary, built with `go test -c`
 *.test

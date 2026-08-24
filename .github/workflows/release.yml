@@ -1,0 +1,84 @@
+# This file is part of REANA.
+# Copyright (C) 2026 CERN.
+#
+# REANA is free software; you can redistribute it and/or modify it
+# under the terms of the MIT License; see LICENSE file for more details.
+
+name: release
+
+on:
+  push:
+    tags:
+      - "v*-*"
+  workflow_call:
+    inputs:
+      release_tag:
+        description: Existing release tag to build
+        required: true
+        type: string
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Existing release tag to rebuild
+        required: true
+        type: string
+
+jobs:
+  release_assets:
+    runs-on: ubuntu-24.04
+    env:
+      RELEASE_TAG: ${{ inputs.release_tag || github.ref_name }}
+    permissions:
+      contents: write
+    steps:
+      - name: Check out release tag
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          ref: ${{ env.RELEASE_TAG }}
+
+      - name: Set up Go
+        uses: actions/setup-go@v7
+        with:
+          cache: true
+          go-version-file: go.mod
+
+      - name: Verify release tag
+        run: |
+          tag_ref="refs/tags/$RELEASE_TAG"
+          git show-ref --verify --quiet "$tag_ref"
+          test "$(git rev-parse HEAD)" = "$(git rev-list -n 1 "$tag_ref")"
+          test "$(go run . version)" = "$RELEASE_TAG"
+
+      - name: Build standalone binaries
+        run: make release
+
+      - name: Verify binaries and generate checksums
+        run: |
+          binaries=(
+            "reana-client-go-$RELEASE_TAG-darwin-amd64"
+            "reana-client-go-$RELEASE_TAG-darwin-arm64"
+            "reana-client-go-$RELEASE_TAG-linux-amd64"
+            "reana-client-go-$RELEASE_TAG-linux-arm64"
+          )
+          for binary in "${binaries[@]}"; do
+            test -f "$binary"
+            go version "$binary"
+          done
+          file "reana-client-go-$RELEASE_TAG-linux-amd64" | grep --quiet "statically linked"
+          file "reana-client-go-$RELEASE_TAG-linux-arm64" | grep --quiet "statically linked"
+          sha256sum "${binaries[@]}" | sort --key=2 > checksums.txt
+          cat checksums.txt
+
+      - name: Upload release assets
+        uses: softprops/action-gh-release@v3
+        with:
+          fail_on_unmatched_files: true
+          files: |
+            reana-client-go-${{ env.RELEASE_TAG }}-darwin-amd64
+            reana-client-go-${{ env.RELEASE_TAG }}-darwin-arm64
+            reana-client-go-${{ env.RELEASE_TAG }}-linux-amd64
+            reana-client-go-${{ env.RELEASE_TAG }}-linux-arm64
+            checksums.txt
+          prerelease: ${{ contains(env.RELEASE_TAG, '-') }}
+          tag_name: ${{ env.RELEASE_TAG }}
