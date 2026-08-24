@@ -55,6 +55,7 @@ type ServerResponse struct {
 	statusCode              int
 	responseFile            string
 	responseHeaders         map[string]string
+	expectedQueryParams     map[string]string
 	additionalResponseFiles []string
 }
 
@@ -86,6 +87,16 @@ func testCmdRun(t *testing.T, p TestCmdParams) {
 			}
 			res, validPath := p.serverResponses[r.URL.Path]
 			if validPath {
+				for name, expected := range res.expectedQueryParams {
+					if got := r.URL.Query().Get(name); got != expected {
+						t.Errorf(
+							"Expected query parameter '%s' to be '%s', got '%s'",
+							name,
+							expected,
+							got,
+						)
+					}
+				}
 				w.Header().Add("Content-Type", "application/json")
 				for name, value := range res.responseHeaders {
 					w.Header().Add(name, value)

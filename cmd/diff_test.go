@@ -76,14 +76,35 @@ func TestDiff(t *testing.T) {
 				"Differences in workflow specification", "Differences in workflow outputs",
 			},
 		},
-		"no workspace info": {
+		"lowercase unified shorthand": {
 			serverResponses: map[string]ServerResponse{
 				fmt.Sprintf(diffPathTemplate, workflowA, workflowB): {
 					statusCode:   http.StatusOK,
 					responseFile: "diff_no_workspace.json",
+					expectedQueryParams: map[string]string{
+						"context_lines": "10",
+					},
 				},
 			},
-			args: []string{workflowA, workflowB},
+			args: []string{"-u", "10", workflowA, workflowB},
+			expected: []string{
+				"No differences in REANA specifications",
+			},
+			unwanted: []string{
+				"Differences in workflow workspace",
+			},
+		},
+		"uppercase unified shorthand": {
+			serverResponses: map[string]ServerResponse{
+				fmt.Sprintf(diffPathTemplate, workflowA, workflowB): {
+					statusCode:   http.StatusOK,
+					responseFile: "diff_no_workspace.json",
+					expectedQueryParams: map[string]string{
+						"context_lines": "10",
+					},
+				},
+			},
+			args: []string{"-U", "10", workflowA, workflowB},
 			expected: []string{
 				"No differences in REANA specifications",
 			},

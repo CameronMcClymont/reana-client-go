@@ -84,8 +84,18 @@ files in the two workspaces are shown.`,
 		"unified",
 		"u",
 		5,
-		"Sets number of context lines for workspace diff output.",
+		"Sets number of context lines for workspace diff output (alias: -U).",
 	)
+	// pflag supports only one shorthand per flag. This hidden shadow flag
+	// shares o.unified with --unified; Changed("unified") does not detect -U.
+	f.IntVarP(
+		&o.unified,
+		"unified-uppercase",
+		"U",
+		5,
+		"Alias for --unified.",
+	)
+	f.Lookup("unified-uppercase").Hidden = true
 
 	return cmd
 }
