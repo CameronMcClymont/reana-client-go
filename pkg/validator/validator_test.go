@@ -50,6 +50,44 @@ func TestValidateChoice(t *testing.T) {
 	})
 }
 
+func TestValidateChoiceCaseInsensitive(t *testing.T) {
+	choices := []string{"test1", "Test2", "test3"}
+	tests := map[string]struct {
+		value     string
+		expected  string
+		wantError bool
+	}{
+		"lowercase":  {value: "test2", expected: "Test2"},
+		"mixed-case": {value: "Test2", expected: "Test2"},
+		"uppercase":  {value: "TEST2", expected: "Test2"},
+		"invalid":    {value: "INVALID", wantError: true},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			got, err := ValidateChoiceCaseInsensitive(
+				test.value,
+				choices,
+				"test",
+			)
+			if test.wantError {
+				expected := "invalid value for 'test': 'INVALID' is not part of " +
+					"'test1', 'Test2', 'test3'"
+				if err == nil || err.Error() != expected {
+					t.Errorf("Expected: %q, got: %q", expected, err)
+				}
+				if got != "" {
+					t.Errorf("Expected an empty canonical choice, got %q", got)
+				}
+			} else if err != nil {
+				t.Errorf("Got unexpected error: %q", err)
+			} else if got != test.expected {
+				t.Errorf("Expected canonical choice %q, got %q", test.expected, got)
+			}
+		})
+	}
+}
+
 func TestValidateAtLeastOne(t *testing.T) {
 	tests := map[string]struct {
 		flags     []pflag.Flag

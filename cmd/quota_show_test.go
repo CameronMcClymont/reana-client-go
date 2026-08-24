@@ -46,6 +46,28 @@ func TestQuotaShow(t *testing.T) {
 			expected: []string{"100"},
 			unwanted: []string{"used", "limit", "usage", "cpu", "disk"},
 		},
+		"cpu mixed-case limit": {
+			serverResponses: map[string]ServerResponse{
+				quotaShowServerPath: {
+					statusCode:   http.StatusOK,
+					responseFile: "quota_show_complete.json",
+				},
+			},
+			args:     []string{"--resource", "cpu", "--report", "Limit"},
+			expected: []string{"100"},
+			unwanted: []string{"used", "limit", "usage", "cpu", "disk"},
+		},
+		"cpu uppercase limit": {
+			serverResponses: map[string]ServerResponse{
+				quotaShowServerPath: {
+					statusCode:   http.StatusOK,
+					responseFile: "quota_show_complete.json",
+				},
+			},
+			args:     []string{"--resource", "cpu", "--report", "LIMIT"},
+			expected: []string{"100"},
+			unwanted: []string{"used", "limit", "usage", "cpu", "disk"},
+		},
 		"cpu usage": {
 			serverResponses: map[string]ServerResponse{
 				quotaShowServerPath: {
@@ -272,10 +294,10 @@ func TestQuotaShow(t *testing.T) {
 				"--resource",
 				"cpu",
 				"--report",
-				"invalid",
+				"Invalid",
 			}, wantError: true,
 			expected: []string{fmt.Sprintf(
-				"invalid value for 'report': 'invalid' is not part of '%s'",
+				"invalid value for 'report': 'Invalid' is not part of '%s'",
 				strings.Join(config.QuotaReports, "', '"),
 			)},
 		},

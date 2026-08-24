@@ -87,11 +87,13 @@ func newQuotaShowCmd() *cobra.Command {
 				return fmt.Errorf("%s\n%s", err.Error(), cmd.UsageString())
 			}
 			if cmd.Flags().Changed("report") {
-				if err := validator.ValidateChoice(
+				report, err := validator.ValidateChoiceCaseInsensitive(
 					o.report, config.QuotaReports, "report",
-				); err != nil {
+				)
+				if err != nil {
 					return err
 				}
+				o.report = report
 			} else {
 				o.unspecifiedReport = true
 			}

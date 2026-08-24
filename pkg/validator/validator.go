@@ -60,14 +60,33 @@ func ValidateWorkflow(workflow string) error {
 // The third parameter, name, is the name of the argument/flag that should be displayed if the validation fails.
 func ValidateChoice(arg string, choices []string, name string) error {
 	if !slices.Contains(choices, arg) {
-		return fmt.Errorf(
-			"invalid value for '%s': '%s' is not part of '%s'",
-			name,
-			arg,
-			strings.Join(choices, "', '"),
-		)
+		return invalidChoiceError(arg, choices, name)
 	}
 	return nil
+}
+
+// ValidateChoiceCaseInsensitive returns the canonical choice matching the
+// given argument (arg) without regard to letter case.
+func ValidateChoiceCaseInsensitive(
+	arg string,
+	choices []string,
+	name string,
+) (string, error) {
+	for _, choice := range choices {
+		if strings.EqualFold(arg, choice) {
+			return choice, nil
+		}
+	}
+	return "", invalidChoiceError(arg, choices, name)
+}
+
+func invalidChoiceError(arg string, choices []string, name string) error {
+	return fmt.Errorf(
+		"invalid value for '%s': '%s' is not part of '%s'",
+		name,
+		arg,
+		strings.Join(choices, "', '"),
+	)
 }
 
 // ValidateAtLeastOne verifies if the given FlagSet has at least one of the flags given in options changed.
