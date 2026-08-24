@@ -16,6 +16,7 @@ import (
 	"path"
 	"reanahub/reana-client-go/pkg/config"
 	"reanahub/reana-client-go/pkg/displayer"
+	"reanahub/reana-client-go/pkg/errorhandler"
 	"reanahub/reana-client-go/pkg/fileutils"
 	"reanahub/reana-client-go/pkg/workflows"
 	"strings"
@@ -109,6 +110,11 @@ func (o *downloadOptions) run(cmd *cobra.Command, args []string) error {
 	}
 	log.Debugf("Download paths: %s", strings.Join(downloadPaths, ", "))
 
+	downloadFailed := false
+	failureOutput := cmd.OutOrStdout()
+	if o.outputPath == config.StdoutChar {
+		failureOutput = cmd.ErrOrStderr()
+	}
 	for _, file := range downloadPaths {
 		fileName, fileBuf, multipleFilesZipped, err := workflows.DownloadFile(
 			o.token,
@@ -116,24 +122,54 @@ func (o *downloadOptions) run(cmd *cobra.Command, args []string) error {
 			file,
 		)
 		if err != nil {
-			return err
+			downloadFailed = true
+			displayer.DisplayMessage(
+				fmt.Sprintf(
+					"File %s could not be downloaded: %s",
+					file,
+					errorhandler.HandleApiError(err),
+				),
+				displayer.Error,
+				false,
+				failureOutput,
+			)
+			continue
 		}
 		if o.outputPath == config.StdoutChar {
-			err := o.displayFileContent(
+			err = o.displayFileContent(
 				cmd,
 				fileName,
 				fileBuf,
 				multipleFilesZipped,
 			)
 			if err != nil {
-				return err
+				downloadFailed = true
+				displayer.DisplayMessage(
+					fmt.Sprintf(
+						"File %s could not be downloaded: %s",
+						fileName,
+						err,
+					),
+					displayer.Error,
+					false,
+					failureOutput,
+				)
 			}
-		} else {
-			err := o.storeFileContent(cmd, fileName, fileBuf)
-			if err != nil {
-				return err
-			}
+			continue
 		}
+
+		if err = o.storeFileContent(cmd, fileName, fileBuf); err != nil {
+			downloadFailed = true
+			displayer.DisplayMessage(
+				fmt.Sprintf("File %s could not be written: %s", fileName, err),
+				displayer.Error,
+				false,
+				failureOutput,
+			)
+		}
+	}
+	if downloadFailed {
+		return config.ErrEmpty
 	}
 	return nil
 }
