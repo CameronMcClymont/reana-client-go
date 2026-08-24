@@ -11,6 +11,7 @@ package workflows
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"mime"
@@ -71,6 +72,36 @@ func GetStatus(
 	}
 
 	return resp.GetPayload(), nil
+}
+
+// ListRuns returns a page of batch workflow runs and the total number matching
+// the given workflow name and statuses.
+func ListRuns(
+	token, workflow string,
+	statuses []string,
+	page, size int64,
+) ([]*operations.GetWorkflowsOKBodyItemsItems0, int64, error) {
+	listParams := operations.NewGetWorkflowsParams()
+	listParams.SetAccessToken(&token)
+	listParams.SetType("batch")
+	listParams.SetWorkflowIDOrName(&workflow)
+	listParams.SetStatus(statuses)
+	listParams.SetPage(&page)
+	listParams.SetSize(&size)
+
+	api, err := client.ApiClient()
+	if err != nil {
+		return nil, 0, err
+	}
+	resp, err := api.Operations.GetWorkflows(listParams)
+	if err != nil {
+		return nil, 0, err
+	}
+	if resp.GetPayload() == nil {
+		return nil, 0, errors.New("workflow list response is empty")
+	}
+
+	return resp.GetPayload().Items, resp.GetPayload().Total, nil
 }
 
 // GetWorkflowSpecification returns the specification of the specified workflow.

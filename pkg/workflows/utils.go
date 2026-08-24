@@ -26,6 +26,87 @@ func GetNameAndRunNumber(workflowName string) (string, string) {
 	return workflowNameAndRunNumber[0], workflowNameAndRunNumber[1]
 }
 
+// ParseWorkflowRunNumber splits a workflow run name into its base name and
+// major and minor run-number components.
+func ParseWorkflowRunNumber(
+	fullName string,
+) (baseName, major, minor string) {
+	if fullName == "" {
+		return "", "", ""
+	}
+
+	parts := strings.Split(fullName, ".")
+	firstNumericPart := len(parts)
+	for firstNumericPart > 0 && isNumeric(parts[firstNumericPart-1]) {
+		firstNumericPart--
+	}
+
+	baseName = strings.Join(parts[:firstNumericPart], ".")
+	numericParts := parts[firstNumericPart:]
+	if len(numericParts) == 0 {
+		return baseName, "", ""
+	}
+
+	major = numericParts[0]
+	minor = strings.Join(numericParts[1:], ".")
+	return baseName, major, minor
+}
+
+// GetRunNumberMajorKey returns the common key shared by restarted workflow
+// runs, consisting of the base name and major run number.
+func GetRunNumberMajorKey(fullName string) string {
+	baseName, major, _ := ParseWorkflowRunNumber(fullName)
+	if baseName == "" || major == "" {
+		return ""
+	}
+	return baseName + "." + major
+}
+
+// FormatRunNumberLabel returns a compact user-facing workflow run label.
+func FormatRunNumberLabel(fullName string) string {
+	_, major, minor := ParseWorkflowRunNumber(fullName)
+	if major == "" {
+		return fullName
+	}
+	if minor == "" {
+		return "#" + major
+	}
+	return "#" + major + "." + minor
+}
+
+// FormatRunLabelList joins workflow run labels and truncates long lists.
+func FormatRunLabelList(labels []string, maxLabels int) string {
+	nonEmptyLabels := make([]string, 0, len(labels))
+	for _, label := range labels {
+		if label != "" {
+			nonEmptyLabels = append(nonEmptyLabels, label)
+		}
+	}
+
+	if maxLabels <= 0 || len(nonEmptyLabels) <= maxLabels {
+		return strings.Join(nonEmptyLabels, ", ")
+	}
+
+	remaining := len(nonEmptyLabels) - maxLabels
+	return fmt.Sprintf(
+		"%s, +%d more",
+		strings.Join(nonEmptyLabels[:maxLabels], ", "),
+		remaining,
+	)
+}
+
+func isNumeric(value string) bool {
+	if value == "" {
+		return false
+	}
+	for _, char := range value {
+		if char < '0' || char > '9' {
+			return false
+		}
+	}
+	return true
+}
+
 // GetDuration calculates and returns the duration the workflow, based on the given timestamps.
 func GetDuration(
 	runStartedAt, runFinishedAt, runStoppedAt *string,

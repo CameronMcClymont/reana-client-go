@@ -48,6 +48,192 @@ func TestGetNameAndRunNumber(t *testing.T) {
 	}
 }
 
+func TestParseWorkflowRunNumber(t *testing.T) {
+	tests := map[string]struct {
+		fullName string
+		baseName string
+		major    string
+		minor    string
+	}{
+		"empty": {},
+		"workflow name": {
+			fullName: "analysis",
+			baseName: "analysis",
+		},
+		"major run number": {
+			fullName: "analysis.7",
+			baseName: "analysis",
+			major:    "7",
+		},
+		"minor run number": {
+			fullName: "analysis.7.1",
+			baseName: "analysis",
+			major:    "7",
+			minor:    "1",
+		},
+		"nested minor run number": {
+			fullName: "analysis.7.1.2",
+			baseName: "analysis",
+			major:    "7",
+			minor:    "1.2",
+		},
+		"dotted workflow name": {
+			fullName: "physics.analysis.7.1",
+			baseName: "physics.analysis",
+			major:    "7",
+			minor:    "1",
+		},
+		"numeric name": {
+			fullName: "7.1",
+			major:    "7",
+			minor:    "1",
+		},
+		"uuid": {
+			fullName: "86f28b84-d59d-43ed-a8dd-7b4dada3aaa0",
+			baseName: "86f28b84-d59d-43ed-a8dd-7b4dada3aaa0",
+		},
+		"non-numeric suffix": {
+			fullName: "analysis.alpha.2",
+			baseName: "analysis.alpha",
+			major:    "2",
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			baseName, major, minor := ParseWorkflowRunNumber(test.fullName)
+			if baseName != test.baseName || major != test.major ||
+				minor != test.minor {
+				t.Errorf(
+					"ParseWorkflowRunNumber(%q) = (%q, %q, %q), want (%q, %q, %q)",
+					test.fullName,
+					baseName,
+					major,
+					minor,
+					test.baseName,
+					test.major,
+					test.minor,
+				)
+			}
+		})
+	}
+}
+
+func TestGetRunNumberMajorKey(t *testing.T) {
+	tests := map[string]struct {
+		fullName string
+		want     string
+	}{
+		"no run number": {fullName: "analysis"},
+		"major run": {
+			fullName: "analysis.7",
+			want:     "analysis.7",
+		},
+		"restart": {
+			fullName: "analysis.7.2",
+			want:     "analysis.7",
+		},
+		"dotted workflow name": {
+			fullName: "physics.analysis.7.2",
+			want:     "physics.analysis.7",
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			if got := GetRunNumberMajorKey(test.fullName); got != test.want {
+				t.Errorf(
+					"GetRunNumberMajorKey(%q) = %q, want %q",
+					test.fullName,
+					got,
+					test.want,
+				)
+			}
+		})
+	}
+}
+
+func TestFormatRunNumberLabel(t *testing.T) {
+	tests := map[string]struct {
+		fullName string
+		want     string
+	}{
+		"no run number": {
+			fullName: "analysis",
+			want:     "analysis",
+		},
+		"major run": {
+			fullName: "analysis.7",
+			want:     "#7",
+		},
+		"restart": {
+			fullName: "analysis.7.2",
+			want:     "#7.2",
+		},
+		"nested restart": {
+			fullName: "analysis.7.2.1",
+			want:     "#7.2.1",
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			if got := FormatRunNumberLabel(test.fullName); got != test.want {
+				t.Errorf(
+					"FormatRunNumberLabel(%q) = %q, want %q",
+					test.fullName,
+					got,
+					test.want,
+				)
+			}
+		})
+	}
+}
+
+func TestFormatRunLabelList(t *testing.T) {
+	tests := map[string]struct {
+		labels    []string
+		maxLabels int
+		want      string
+	}{
+		"empty": {},
+		"short list": {
+			labels:    []string{"#7", "#7.1"},
+			maxLabels: 10,
+			want:      "#7, #7.1",
+		},
+		"empty labels": {
+			labels:    []string{"#7", "", "#7.1"},
+			maxLabels: 10,
+			want:      "#7, #7.1",
+		},
+		"truncated list": {
+			labels:    []string{"#7", "#7.1", "#7.2", "#7.3"},
+			maxLabels: 2,
+			want:      "#7, #7.1, +2 more",
+		},
+		"unlimited list": {
+			labels:    []string{"#7", "#7.1", "#7.2"},
+			maxLabels: 0,
+			want:      "#7, #7.1, #7.2",
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			if got := FormatRunLabelList(test.labels, test.maxLabels); got != test.want {
+				t.Errorf(
+					"FormatRunLabelList(%v, %d) = %q, want %q",
+					test.labels,
+					test.maxLabels,
+					got,
+					test.want,
+				)
+			}
+		})
+	}
+}
+
 func TestGetDuration(t *testing.T) {
 	curTime := "2020-01-01T03:16:45"
 	future := "2020-01-01T03:16:46"
