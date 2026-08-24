@@ -1,6 +1,6 @@
 /*
 This file is part of REANA.
-Copyright (C) 2022 CERN.
+Copyright (C) 2022, 2026 CERN.
 
 REANA is free software; you can redistribute it and/or modify it
 under the terms of the MIT License; see LICENSE file for more details.
@@ -12,7 +12,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const version = "v0.0.0-alpha.1"
+const version = "v0.95.0-alpha.0" // x-release-please-version
 
 const versionDesc = `
 Show version.
