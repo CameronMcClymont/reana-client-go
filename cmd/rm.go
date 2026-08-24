@@ -14,6 +14,7 @@ import (
 	"reanahub/reana-client-go/client/operations"
 	"reanahub/reana-client-go/pkg/config"
 	"reanahub/reana-client-go/pkg/displayer"
+	"reanahub/reana-client-go/pkg/errorhandler"
 
 	"github.com/spf13/cobra"
 )
@@ -86,7 +87,18 @@ func (o *rmOptions) run(cmd *cobra.Command) error {
 
 		rmResp, err := api.Operations.DeleteFile(rmParams)
 		if err != nil {
-			return err
+			hasError = true
+			displayer.DisplayMessage(
+				fmt.Sprintf(
+					"Something went wrong while deleting %s.\n%s",
+					fileName,
+					errorhandler.HandleApiError(err),
+				),
+				displayer.Error,
+				false,
+				cmd.OutOrStdout(),
+			)
+			continue
 		}
 
 		deleted := rmResp.Payload.Deleted

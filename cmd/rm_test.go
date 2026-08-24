@@ -1,6 +1,6 @@
 /*
 This file is part of REANA.
-Copyright (C) 2022 CERN.
+Copyright (C) 2022, 2026 CERN.
 
 REANA is free software; you can redistribute it and/or modify it
 under the terms of the MIT License; see LICENSE file for more details.
@@ -62,6 +62,47 @@ func TestRm(t *testing.T) {
 			args: []string{"-w", workflowName, "files/*"},
 			expected: []string{
 				"files/* did not match any existing file",
+			},
+			wantError: true,
+		},
+		"continue after individual API failures": {
+			serverResponses: map[string]ServerResponse{
+				fmt.Sprintf(rmPathTemplate, workflowName, "fail-first.txt"): {
+					statusCode:   http.StatusNotFound,
+					responseFile: "download_file_not_found.json",
+				},
+				fmt.Sprintf(rmPathTemplate, workflowName, "success-one.txt"): {
+					statusCode:   http.StatusOK,
+					responseFile: "rm_no_freed.json",
+				},
+				fmt.Sprintf(rmPathTemplate, workflowName, "fail-middle.txt"): {
+					statusCode:   http.StatusNotFound,
+					responseFile: "download_file_not_found.json",
+				},
+				fmt.Sprintf(rmPathTemplate, workflowName, "success-two.txt"): {
+					statusCode:   http.StatusOK,
+					responseFile: "rm_multiple_files.json",
+				},
+				fmt.Sprintf(rmPathTemplate, workflowName, "fail-last.txt"): {
+					statusCode:   http.StatusNotFound,
+					responseFile: "download_file_not_found.json",
+				},
+			},
+			args: []string{
+				"-w", workflowName,
+				"fail-first.txt",
+				"success-one.txt",
+				"fail-middle.txt",
+				"success-two.txt",
+				"fail-last.txt",
+			},
+			expected: []string{
+				"Something went wrong while deleting fail-first.txt",
+				"File files/empty.py was successfully deleted",
+				"Something went wrong while deleting fail-middle.txt",
+				"File files/one.py was successfully deleted",
+				"testing error in three.py",
+				"Something went wrong while deleting fail-last.txt",
 			},
 			wantError: true,
 		},
