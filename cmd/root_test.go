@@ -59,6 +59,43 @@ type ServerResponse struct {
 	additionalResponseFiles []string
 }
 
+func TestRootCommandGroups(t *testing.T) {
+	output, err := ExecuteCommand(NewRootCmd(), "--help")
+	if err != nil {
+		t.Fatalf("Got unexpected error '%s'", err.Error())
+	}
+
+	managementStart := strings.Index(
+		output,
+		"Workflow management commands:",
+	)
+	executionStart := strings.Index(
+		output,
+		"Workflow execution commands:",
+	)
+	sharingStart := strings.Index(output, "Workflow sharing commands:")
+	if managementStart == -1 || executionStart == -1 || sharingStart == -1 ||
+		managementStart >= executionStart || executionStart >= sharingStart {
+		t.Fatalf("Expected workflow command groups in output, got '%s'", output)
+	}
+
+	managementCommands := output[managementStart:executionStart]
+	if !strings.Contains(managementCommands, "\n  create ") {
+		t.Errorf(
+			"Expected create in workflow management commands, got '%s'",
+			managementCommands,
+		)
+	}
+
+	executionCommands := output[executionStart:sharingStart]
+	if strings.Contains(executionCommands, "\n  create ") {
+		t.Errorf(
+			"Did not expect create in workflow execution commands, got '%s'",
+			executionCommands,
+		)
+	}
+}
+
 // getResponseFile returns the response file for the given call number,
 // allowing for additional response files to be used for the same endpoint,
 // i. e. when the endpoint is called multiple times.

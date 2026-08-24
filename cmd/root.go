@@ -73,7 +73,7 @@ func NewRootCmd() *cobra.Command {
 		{
 			Message: "Workflow management commands:",
 			Commands: []*cobra.Command{
-				// create
+				newCreateCmd(),
 				newDiffCmd(),
 				newDeleteCmd(),
 				newListCmd(),
@@ -83,7 +83,6 @@ func NewRootCmd() *cobra.Command {
 			Message: "Workflow execution commands:",
 			Commands: []*cobra.Command{
 				newRunCmd(),
-				newCreateCmd(),
 				newValidateCmd(),
 				newStopCmd(),
 				newRestartCmd(),
