@@ -144,11 +144,53 @@ func (s *Store) saveUnlocked(config credentialConfig) error {
 	return os.Chmod(s.Path, 0o600)
 }
 
+// openLockFile opens (creating if needed) a lock file without following a
+// symlink. A predictable lock path in a shared directory would otherwise let
+// a local attacker pre-create it as a symlink and make the client lock, and
+// chmod, a file of the attacker's choosing.
+func openLockFile(path string) (*os.File, error) {
+	notRegular := fmt.Errorf(
+		"REANA client credential lock path is not a regular file: %s; "+
+			"remove it and retry",
+		path,
+	)
+	file, err := os.OpenFile(
+		path,
+		os.O_CREATE|os.O_RDWR|unix.O_NOFOLLOW,
+		0o600,
+	)
+	if errors.Is(err, unix.ELOOP) || errors.Is(err, unix.EISDIR) {
+		return nil, notRegular
+	}
+	if err != nil {
+		return nil, err
+	}
+	opened, err := file.Stat()
+	if err != nil {
+		file.Close()
+		return nil, err
+	}
+	current, err := os.Lstat(path)
+	if err != nil {
+		file.Close()
+		return nil, err
+	}
+	if !opened.Mode().IsRegular() || !os.SameFile(opened, current) {
+		file.Close()
+		return nil, notRegular
+	}
+	if err := file.Chmod(0o600); err != nil {
+		file.Close()
+		return nil, err
+	}
+	return file, nil
+}
+
 func acquireLock(path string, wait bool) (*os.File, error) {
 	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
 		return nil, err
 	}
-	file, err := os.OpenFile(path, os.O_CREATE|os.O_RDWR, 0o600)
+	file, err := openLockFile(path)
 	if err != nil {
 		return nil, err
 	}
