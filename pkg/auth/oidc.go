@@ -30,12 +30,13 @@ import (
 )
 
 const (
-	discoveryPath       = "/api/.well-known/openid-configuration"
-	defaultScopes       = "openid profile email offline_access"
-	expiryLeeway        = 60 * time.Second
-	refreshLockWait     = 35 * time.Second
-	deviceFlowMax       = time.Hour
-	loopbackCallbackURL = "/callback"
+	discoveryPath             = "/api/.well-known/openid-configuration"
+	defaultScopes             = "openid profile email offline_access"
+	expiryLeeway              = 60 * time.Second
+	refreshLockWait           = 35 * time.Second
+	deviceFlowMax             = time.Hour
+	loopbackCallbackURL       = "/callback"
+	loopbackPortMetadataField = "reana_cli_loopback_port"
 )
 
 // AuthenticationError is an authentication failure suitable for CLI output.
@@ -57,6 +58,11 @@ type Metadata struct {
 	DeviceAuthorizationEndpoint string `json:"device_authorization_endpoint"`
 	RevocationEndpoint          string `json:"revocation_endpoint"`
 	CLIClientID                 string `json:"reana_cli_client_id"`
+	// CLILoopbackPort is the optional login callback port fixed by the
+	// deployment. It is kept raw and validated only when browser login
+	// selects it, so malformed metadata cannot break device login or a
+	// valid environment override.
+	CLILoopbackPort json.RawMessage `json:"reana_cli_loopback_port,omitempty"`
 }
 
 type tokenResponse struct {
@@ -666,6 +672,56 @@ type callbackResult struct {
 	ErrorDescription string
 }
 
+// selectLoopbackPort returns the login callback port and, when the port is
+// fixed, the name of the source that fixed it. An explicit environment
+// override wins, including 0 for an OS-assigned port; otherwise the port
+// advertised by REANA Server is used, and an OS-assigned port is the default.
+func selectLoopbackPort(metadata Metadata) (int, string, error) {
+	rawEnvPort := strings.TrimSpace(os.Getenv(loginLoopbackPortEnv))
+	if rawEnvPort != "" {
+		port, err := strconv.Atoi(rawEnvPort)
+		if err != nil || port < 0 || port > 65535 {
+			return 0, "", authenticationError(
+				"%s must be an integer between 0 and 65535, got %q",
+				loginLoopbackPortEnv,
+				rawEnvPort,
+			)
+		}
+		if port == 0 {
+			return 0, "", nil
+		}
+		return port, loginLoopbackPortEnv, nil
+	}
+	if len(metadata.CLILoopbackPort) == 0 {
+		return 0, "", nil
+	}
+	// Accept only a plain JSON integer: json.Number alone would also admit
+	// quoted numeric strings and fractional or exponent notation.
+	rawPort := strings.TrimSpace(string(metadata.CLILoopbackPort))
+	isInteger := rawPort != "" && len(rawPort) <= 5
+	for _, character := range rawPort {
+		if character < '0' || character > '9' {
+			isInteger = false
+		}
+	}
+	port := 0
+	if isInteger {
+		port, _ = strconv.Atoi(rawPort)
+	}
+	if port < 1 || port > 65535 {
+		return 0, "", authenticationError(
+			"REANA server advertises an invalid login callback port (%s=%s); "+
+				"it must be an integer between 1 and 65535; please report this to "+
+				"the administrators of the REANA server, or set %s to the port "+
+				"registered with the identity provider",
+			loopbackPortMetadataField,
+			rawPort,
+			loginLoopbackPortEnv,
+		)
+	}
+	return port, "the REANA server", nil
+}
+
 // LoginBrowser performs loopback authorization-code login with PKCE.
 func (m *Manager) LoginBrowser(
 	ctx context.Context,
@@ -689,26 +745,23 @@ func (m *Manager) LoginBrowser(
 	if err != nil {
 		return Credentials{}, err
 	}
-	loopbackPort := 0
-	rawLoopbackPort := strings.TrimSpace(os.Getenv(loginLoopbackPortEnv))
-	if rawLoopbackPort != "" {
-		loopbackPort, err = strconv.Atoi(rawLoopbackPort)
-		if err != nil || loopbackPort < 0 || loopbackPort > 65535 {
-			return Credentials{}, authenticationError(
-				"%s must be an integer between 0 and 65535, got %q",
-				loginLoopbackPortEnv,
-				rawLoopbackPort,
-			)
-		}
+	loopbackPort, loopbackPortSource, err := selectLoopbackPort(metadata)
+	if err != nil {
+		return Credentials{}, err
 	}
 	listenerAddress := net.JoinHostPort("127.0.0.1", strconv.Itoa(loopbackPort))
 	listener, err := net.Listen("tcp", listenerAddress)
 	if err != nil {
-		if rawLoopbackPort != "" && loopbackPort != 0 {
+		if loopbackPortSource != "" {
+			// Never fall back to another port here: the identity provider
+			// would reject a redirect URI that is not the registered one.
 			return Credentials{}, authenticationError(
-				"could not start the login callback listener on %s fixed by %s: %v",
+				"could not start the login callback listener on %s fixed by %s: %v; "+
+					"free the port and try again, or use --headless if the identity "+
+					"provider and the REANA CLI client registration support the "+
+					"device-code grant",
 				listenerAddress,
-				loginLoopbackPortEnv,
+				loopbackPortSource,
 				err,
 			)
 		}

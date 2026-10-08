@@ -548,6 +548,264 @@ func TestBrowserLoginReportsOccupiedConfiguredLoopbackPort(t *testing.T) {
 	}
 }
 
+func loopbackDiscoveryDocument(extra string) string {
+	return `{
+        "issuer":"https://issuer.example.org",
+        "authorization_endpoint":"https://issuer.example.org/auth",
+        "token_endpoint":"https://issuer.example.org/token",
+        "device_authorization_endpoint":"https://issuer.example.org/device",
+        "reana_cli_client_id":"reana-cli"` + extra + `}`
+}
+
+func freeLoopbackPort(t *testing.T) int {
+	t.Helper()
+	probe, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer probe.Close()
+	return probe.Addr().(*net.TCPAddr).Port
+}
+
+func TestSelectLoopbackPortPrecedence(t *testing.T) {
+	advertised := Metadata{CLILoopbackPort: json.RawMessage("8899")}
+	tests := map[string]struct {
+		env        string
+		metadata   Metadata
+		wantPort   int
+		wantSource string
+	}{
+		"default":    {"", Metadata{}, 0, ""},
+		"advertised": {"", advertised, 8899, "the REANA server"},
+		"advertised whitespace": {
+			"",
+			Metadata{CLILoopbackPort: json.RawMessage(" 8899\n")},
+			8899,
+			"the REANA server",
+		},
+		"advertised lower bound": {
+			"",
+			Metadata{CLILoopbackPort: json.RawMessage("1")},
+			1,
+			"the REANA server",
+		},
+		"advertised upper bound": {
+			"",
+			Metadata{CLILoopbackPort: json.RawMessage("65535")},
+			65535,
+			"the REANA server",
+		},
+		"environment override": {
+			"8898",
+			advertised,
+			8898,
+			loginLoopbackPortEnv,
+		},
+		"explicit zero":     {"0", advertised, 0, ""},
+		"blank environment": {"  ", advertised, 8899, "the REANA server"},
+		"override ignores malformed metadata": {
+			"8898", Metadata{CLILoopbackPort: json.RawMessage(`"oops"`)}, 8898, loginLoopbackPortEnv,
+		},
+		"zero ignores malformed metadata": {
+			"0", Metadata{CLILoopbackPort: json.RawMessage("null")}, 0, "",
+		},
+	}
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Setenv(loginLoopbackPortEnv, test.env)
+			port, source, err := selectLoopbackPort(test.metadata)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if port != test.wantPort || source != test.wantSource {
+				t.Fatalf(
+					"selection = (%d, %q), want (%d, %q)",
+					port, source, test.wantPort, test.wantSource,
+				)
+			}
+		})
+	}
+}
+
+func TestSelectLoopbackPortRejectsInvalidAdvertisedPort(t *testing.T) {
+	t.Setenv(loginLoopbackPortEnv, "")
+	for _, raw := range []string{
+		`"8899"`, "8899.0", "88.5", "8.899e3", "null", "true", "false",
+		"0", "-1", "65536", "100000", "[8899]", `{"port":8899}`, "+8899",
+	} {
+		t.Run(raw, func(t *testing.T) {
+			_, _, err := selectLoopbackPort(
+				Metadata{CLILoopbackPort: json.RawMessage(raw)},
+			)
+			if err == nil ||
+				!strings.Contains(err.Error(), loopbackPortMetadataField) ||
+				!strings.Contains(err.Error(), loginLoopbackPortEnv) {
+				t.Fatalf("invalid advertised port error = %v", err)
+			}
+		})
+	}
+}
+
+func TestBrowserLoginUsesAdvertisedLoopbackPort(t *testing.T) {
+	t.Setenv(loginLoopbackPortEnv, "")
+	port := freeLoopbackPort(t)
+	wantRedirectURI := "http://127.0.0.1:" + strconv.Itoa(
+		port,
+	) + loopbackCallbackURL
+	var tokenRedirectURI string
+	manager := testManager(
+		t,
+		func(request *http.Request) (*http.Response, error) {
+			switch request.URL.Path {
+			case discoveryPath:
+				return jsonResponse(http.StatusOK, loopbackDiscoveryDocument(
+					`,"reana_cli_loopback_port":`+strconv.Itoa(port),
+				)), nil
+			case "/token":
+				form := readForm(t, request)
+				tokenRedirectURI = form.Get("redirect_uri")
+				if form.Get("code_verifier") == "" {
+					t.Error("token exchange is missing the PKCE verifier")
+				}
+				return jsonResponse(
+					http.StatusOK,
+					`{"access_token":"browser.jwt.token","refresh_token":"refresh","expires_in":3600}`,
+				), nil
+			default:
+				return nil, fmt.Errorf("unexpected request: %s", request.URL)
+			}
+		},
+	)
+	var authorizationRedirectURI string
+	_, err := manager.LoginBrowser(
+		context.Background(),
+		"https://reana.example.org",
+		func(string) {},
+		func(authorizationURL string) error {
+			parsed, err := url.Parse(authorizationURL)
+			if err != nil {
+				return err
+			}
+			query := parsed.Query()
+			authorizationRedirectURI = query.Get("redirect_uri")
+			if query.Get("code_challenge_method") != "S256" {
+				t.Errorf("authorization query = %v", query)
+			}
+			go func() {
+				response, err := http.Get(
+					authorizationRedirectURI + "?code=auth-code&state=" +
+						url.QueryEscape(query.Get("state")),
+				)
+				if err == nil {
+					response.Body.Close()
+				}
+			}()
+			return nil
+		},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if authorizationRedirectURI != wantRedirectURI ||
+		tokenRedirectURI != wantRedirectURI {
+		t.Fatalf(
+			"redirect URIs = %q and %q, want %q",
+			authorizationRedirectURI, tokenRedirectURI, wantRedirectURI,
+		)
+	}
+}
+
+func TestBrowserLoginReportsOccupiedAdvertisedLoopbackPort(t *testing.T) {
+	t.Setenv(loginLoopbackPortEnv, "")
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer listener.Close()
+	port := listener.Addr().(*net.TCPAddr).Port
+	manager := testManager(
+		t,
+		func(request *http.Request) (*http.Response, error) {
+			return jsonResponse(http.StatusOK, loopbackDiscoveryDocument(
+				`,"reana_cli_loopback_port":`+strconv.Itoa(port),
+			)), nil
+		},
+	)
+	opened := false
+	_, err = manager.LoginBrowser(
+		context.Background(),
+		"https://reana.example.org",
+		func(string) {},
+		func(string) error { opened = true; return nil },
+	)
+	if err == nil {
+		t.Fatal("occupied advertised port did not fail")
+	}
+	for _, want := range []string{
+		"127.0.0.1:" + strconv.Itoa(port),
+		"fixed by the REANA server",
+		"--headless",
+		"device-code grant",
+	} {
+		if !strings.Contains(err.Error(), want) {
+			t.Fatalf("occupied port error = %v, want %q", err, want)
+		}
+	}
+	if opened {
+		t.Fatal("browser was opened although the fixed port is occupied")
+	}
+}
+
+func TestBrowserLoginRejectsInvalidAdvertisedLoopbackPort(t *testing.T) {
+	t.Setenv(loginLoopbackPortEnv, "")
+	manager := testManager(
+		t,
+		func(request *http.Request) (*http.Response, error) {
+			return jsonResponse(http.StatusOK, loopbackDiscoveryDocument(
+				`,"reana_cli_loopback_port":"8899"`,
+			)), nil
+		},
+	)
+	_, err := manager.LoginBrowser(
+		context.Background(),
+		"https://reana.example.org",
+		func(string) {},
+		func(string) error { return nil },
+	)
+	if err == nil ||
+		!strings.Contains(err.Error(), loopbackPortMetadataField) {
+		t.Fatalf("invalid advertised port error = %v", err)
+	}
+}
+
+func TestDiscoverAcceptsMalformedUnusedLoopbackPort(t *testing.T) {
+	for _, raw := range []string{`"oops"`, "null", "8899.5", `{"a":1}`} {
+		t.Run(raw, func(t *testing.T) {
+			manager := testManager(
+				t,
+				func(request *http.Request) (*http.Response, error) {
+					return jsonResponse(
+						http.StatusOK,
+						loopbackDiscoveryDocument(
+							`,"reana_cli_loopback_port":`+raw,
+						),
+					), nil
+				},
+			)
+			metadata, err := manager.Discover(
+				context.Background(),
+				"https://reana.example.org",
+			)
+			if err != nil {
+				t.Fatalf("discovery failed on unused metadata: %v", err)
+			}
+			if err := validateMetadata(metadata, true); err != nil {
+				t.Fatalf("device login metadata rejected: %v", err)
+			}
+		})
+	}
+}
+
 func TestAccessTokenRefreshesAndPreservesRotatedRefreshToken(t *testing.T) {
 	manager := testManager(
 		t,
